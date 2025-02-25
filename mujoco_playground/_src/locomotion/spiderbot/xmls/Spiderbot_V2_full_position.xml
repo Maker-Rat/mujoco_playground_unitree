@@ -12,10 +12,10 @@
 
   <asset>
     <mesh name="base_link" file="base_link.STL"/>
-    <mesh name="calf_motor_link_leg_1" file="calf_motor_link_leg_1.STL" maxhullvert="30"/>
+    <mesh name="calf_motor_link_leg_1" file="calf_motor_link_leg_1.STL" maxhullvert="5"/>
     <mesh name="parallel_link_top_leg_1" file="parallel_link_top_leg_1.STL"/>
     <mesh name="last_link_leg_1" file="last_link_leg_1.STL"/>
-    <mesh name="parallel_link_bottom_leg_1" file="parallel_link_bottom_leg_1.STL" maxhullvert="30"/>
+    <mesh name="parallel_link_bottom_leg_1" file="parallel_link_bottom_leg_1.STL" maxhullvert="5"/>
   </asset>
 
   <worldbody>
