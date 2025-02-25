@@ -48,7 +48,7 @@ class SpiderbotEnv(mjx_env.MjxEnv):
     ) -> None:
         super().__init__(config, config_overrides)
 
-        print(xml_path)
+        # print(xml_path)
         self._mj_model = mujoco.MjModel.from_xml_string(
             epath.Path(xml_path).read_text(), assets=get_assets()
         )
