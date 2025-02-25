@@ -93,7 +93,7 @@ def default_config() -> config_dict.ConfigDict:
   )
 
 
-class Joystick(spiderbot_base.HexapodEnv):
+class Joystick(spiderbot_base.SpiderbotEnv):
   """Track a joystick command for spiderbot."""
 
   def __init__(
