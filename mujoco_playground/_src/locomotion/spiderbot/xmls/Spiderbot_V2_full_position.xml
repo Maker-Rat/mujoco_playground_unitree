@@ -16,18 +16,9 @@
     <mesh name="parallel_link_top_leg_1" file="parallel_link_top_leg_1.STL"/>
     <mesh name="last_link_leg_1" file="last_link_leg_1.STL"/>
     <mesh name="parallel_link_bottom_leg_1" file="parallel_link_bottom_leg_1.STL" maxhullvert="30"/>
-    
-    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="1 1 1" width="300" height="300"/>
-    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
   </asset>
 
   <worldbody>
-    <geom name="floor" type="plane" size="10 10 0.1" material="groundplane" 
-          contype="1" conaffinity="1" condim="3" 
-          friction="0.9 0.005 0.0001"/>
-    
-    <light directional="true" diffuse=".8 .8 .8" specular=".2 .2 .2" pos="0 0 5" dir="0 0 -1"/>
-    
     <body name="base_link" pos="0 0 0.5" quat="0.707107 -0.707107 0 0">
       <camera name="track" pos="0.846 -1.465 0.916" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940" mode="trackcom"/>
       <inertial pos="0 0 0" mass="7.5" diaginertia="0.1 0.1 0.1"/>
