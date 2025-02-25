@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Base classes for Go2."""
+"""Base classes for Spiderbot"""
 
 from typing import Any, Dict, Optional, Union
 
@@ -24,20 +24,20 @@ import mujoco
 from mujoco import mjx
 
 from mujoco_playground._src import mjx_env
-from mujoco_playground._src.locomotion.go2 import go2_constants as consts  # Updated import
+from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as consts  # Updated import
 
 
 def get_assets() -> Dict[str, bytes]:
     assets = {}
     mjx_env.update_assets(assets, consts.ROOT_PATH / "xmls", "*.xml")
     mjx_env.update_assets(assets, consts.ROOT_PATH / "xmls" / "assets")
-    path = mjx_env.MENAGERIE_PATH / "unitree_go2"  # Ensure the correct path
-    mjx_env.update_assets(assets, path, "*.xml")
-    mjx_env.update_assets(assets, path / "assets")
+    # path = mjx_env.MENAGERIE_PATH / "unitree_go2"  # Ensure the correct path
+    # mjx_env.update_assets(assets, path, "*.xml")
+    # mjx_env.update_assets(assets, path / "assets")
     return assets
 
 
-class Go2Env(mjx_env.MjxEnv):
+class SpiderbotEnv(mjx_env.MjxEnv):
     """Base class for Go2 environments."""
 
     def __init__(
@@ -83,8 +83,8 @@ class Go2Env(mjx_env.MjxEnv):
     def get_local_linvel(self, data: mjx.Data) -> jax.Array:
         return mjx_env.get_sensor_data(self.mj_model, data, consts.LOCAL_LINVEL_SENSOR)
 
-    def get_accelerometer(self, data: mjx.Data) -> jax.Array:
-        return mjx_env.get_sensor_data(self.mj_model, data, consts.ACCELEROMETER_SENSOR)
+    # def get_accelerometer(self, data: mjx.Data) -> jax.Array:
+    #     return mjx_env.get_sensor_data(self.mj_model, data, consts.ACCELEROMETER_SENSOR)
 
     def get_gyro(self, data: mjx.Data) -> jax.Array:
         return mjx_env.get_sensor_data(self.mj_model, data, consts.GYRO_SENSOR)

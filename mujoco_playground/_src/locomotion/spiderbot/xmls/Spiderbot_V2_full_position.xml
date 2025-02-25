@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mujoco model="Spiderbot_V2">
-  <compiler angle="radian" meshdir="./assets/"/>
+  <compiler angle="radian" meshdir="./assets"/>
 
   <option gravity="0 0 -9.81" timestep="0.002">
     <flag contact="enable" gravity="enable"/>
+  </option>
+
+  <option iterations="1" ls_iterations="5" timestep="0.004" integrator="Euler">
+    <flag eulerdamp="disable"/>
   </option>
 
   <asset>
@@ -25,10 +29,12 @@
     <light directional="true" diffuse=".8 .8 .8" specular=".2 .2 .2" pos="0 0 5" dir="0 0 -1"/>
     
     <body name="base_link" pos="0 0 0.5" quat="0.707107 -0.707107 0 0">
+      <camera name="track" pos="0.846 -1.465 0.916" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940" mode="trackcom"/>
       <inertial pos="0 0 0" mass="7.5" diaginertia="0.1 0.1 0.1"/>
       <joint type="free"/>
       <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="base_link"/>
       <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="base_link"/>
+      <site name="imu" pos="0 0 0"/>
       
       <!-- Leg 1 (Front Right) -->
       <body name="calf_motor_link_leg_1" pos="-0.06063 0 -0.10479" quat="0.355174 0.355177 0.611433 -0.611433">
@@ -51,6 +57,8 @@
             <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
             <site name="site1_leg_1" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
             <site name="spring_site1_leg_1" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <geom name="foot_1" size="0.005" pos="0 -0.1415 0" priority="1" solimp="0.015 1 0.031" condim="6" friction="0.8 0.02 0.01"/>
+            <site name="foot_site_1" pos="0 -0.1415 0" type="sphere" size="0.005" rgba="0.64706 0.64706 0.64706 1"/>
           </body>
         </body>
         
@@ -84,6 +92,8 @@
             <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
             <site name="site1_leg_2" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
             <site name="spring_site1_leg_2" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <geom name="foot_2" size="0.005" pos="0 -0.1415 0" priority="1" solimp="0.015 1 0.031" condim="6" friction="0.8 0.02 0.01"/>
+            <site name="foot_site_2" pos="0 -0.1415 0" type="sphere" size="0.005" rgba="0.64706 0.64706 0.64706 1"/>
           </body>
         </body>
         
@@ -117,6 +127,8 @@
             <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
             <site name="site1_leg_3" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
             <site name="spring_site1_leg_3" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <geom name="foot_3" size="0.005" pos="0 -0.1415 0" priority="1" solimp="0.015 1 0.031" condim="6" friction="0.8 0.02 0.01"/>
+            <site name="foot_site_3" pos="0 -0.1415 0" type="sphere" size="0.005" rgba="0.64706 0.64706 0.64706 1"/>
           </body>
         </body>
         
@@ -150,6 +162,8 @@
             <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
             <site name="site1_leg_4" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
             <site name="spring_site1_leg_4" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <geom name="foot_4" size="0.005" pos="0 -0.1415 0" priority="1" solimp="0.015 1 0.031" condim="6" friction="0.8 0.02 0.01"/>
+            <site name="foot_site_4" pos="0 -0.1415 0" type="sphere" size="0.005" rgba="0.64706 0.64706 0.64706 1"/>
           </body>
         </body>
         
@@ -183,6 +197,8 @@
             <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
             <site name="site1_leg_5" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
             <site name="spring_site1_leg_5" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <geom name="foot_5" size="0.005" pos="0 -0.1415 0" priority="1" solimp="0.015 1 0.031" condim="6" friction="0.8 0.02 0.01"/>
+            <site name="foot_site_5" pos="0 -0.1415 0" type="sphere" size="0.005" rgba="0.64706 0.64706 0.64706 1"/>
           </body>
         </body>
         
@@ -216,6 +232,8 @@
             <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
             <site name="site1_leg_6" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
             <site name="spring_site1_leg_6" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <geom name="foot_6" size="0.005" pos="0 -0.1415 0" priority="1" solimp="0.015 1 0.031" condim="6" friction="0.8 0.02 0.01"/>
+            <site name="foot_site_6" pos="0 -0.1415 0" type="sphere" size="0.005" rgba="0.64706 0.64706 0.64706 1"/>
           </body>
         </body>
         
@@ -262,48 +280,30 @@
   </actuator>
   
   <sensor>
-    <!-- Sensors for all legs -->
-    <jointpos name="calf_motor_pos_leg_1" joint="calf_motor_link_joint_leg_1"/>
-    <jointpos name="parallel_link_top_pos_leg_1" joint="parallel_link_top_joint_leg_1"/>
-    <jointpos name="parallel_link_bottom_pos_leg_1" joint="parallel_link_bottom_joint_leg_1"/>
-    <jointvel name="calf_motor_vel_leg_1" joint="calf_motor_link_joint_leg_1"/>
-    <jointvel name="parallel_link_top_vel_leg_1" joint="parallel_link_top_joint_leg_1"/>
-    <jointvel name="parallel_link_bottom_vel_leg_1" joint="parallel_link_bottom_joint_leg_1"/>
+    <!-- IMU sensors similar to Go2 -->
+    <gyro site="imu" name="gyro"/>
+    <velocimeter site="imu" name="local_linvel"/>
+    <!-- <accelerometer site="imu" name="accelerometer"/> -->
+    <framepos objtype="site" objname="imu" name="position"/>
+    <framezaxis objtype="site" objname="imu" name="upvector"/>
+    <framexaxis objtype="site" objname="imu" name="forwardvector"/>
+    <framelinvel objtype="site" objname="imu" name="global_linvel"/>
+    <frameangvel objtype="site" objname="imu" name="global_angvel"/>
+    <framequat objtype="site" objname="imu" name="orientation"/>
     
-    <jointpos name="calf_motor_pos_leg_2" joint="calf_motor_link_joint_leg_2"/>
-    <jointpos name="parallel_link_top_pos_leg_2" joint="parallel_link_top_joint_leg_2"/>
-    <jointpos name="parallel_link_bottom_pos_leg_2" joint="parallel_link_bottom_joint_leg_2"/>
-    <jointvel name="calf_motor_vel_leg_2" joint="calf_motor_link_joint_leg_2"/>
-    <jointvel name="parallel_link_top_vel_leg_2" joint="parallel_link_top_joint_leg_2"/>
-    <jointvel name="parallel_link_bottom_vel_leg_2" joint="parallel_link_bottom_joint_leg_2"/>
-    
-    <jointpos name="calf_motor_pos_leg_3" joint="calf_motor_link_joint_leg_3"/>
-    <jointpos name="parallel_link_top_pos_leg_3" joint="parallel_link_top_joint_leg_3"/>
-    <jointpos name="parallel_link_bottom_pos_leg_3" joint="parallel_link_bottom_joint_leg_3"/>
-    <jointvel name="calf_motor_vel_leg_3" joint="calf_motor_link_joint_leg_3"/>
-    <jointvel name="parallel_link_top_vel_leg_3" joint="parallel_link_top_joint_leg_3"/>
-    <jointvel name="parallel_link_bottom_vel_leg_3" joint="parallel_link_bottom_joint_leg_3"/>
-    
-    <jointpos name="calf_motor_pos_leg_4" joint="calf_motor_link_joint_leg_4"/>
-    <jointpos name="parallel_link_top_pos_leg_4" joint="parallel_link_top_joint_leg_4"/>
-    <jointpos name="parallel_link_bottom_pos_leg_4" joint="parallel_link_bottom_joint_leg_4"/>
-    <jointvel name="calf_motor_vel_leg_4" joint="calf_motor_link_joint_leg_4"/>
-    <jointvel name="parallel_link_top_vel_leg_4" joint="parallel_link_top_joint_leg_4"/>
-    <jointvel name="parallel_link_bottom_vel_leg_4" joint="parallel_link_bottom_joint_leg_4"/>
-    
-    <jointpos name="calf_motor_pos_leg_5" joint="calf_motor_link_joint_leg_5"/>
-    <jointpos name="parallel_link_top_pos_leg_5" joint="parallel_link_top_joint_leg_5"/>
-    <jointpos name="parallel_link_bottom_pos_leg_5" joint="parallel_link_bottom_joint_leg_5"/>
-    <jointvel name="calf_motor_vel_leg_5" joint="calf_motor_link_joint_leg_5"/>
-    <jointvel name="parallel_link_top_vel_leg_5" joint="parallel_link_top_joint_leg_5"/>
-    <jointvel name="parallel_link_bottom_vel_leg_5" joint="parallel_link_bottom_joint_leg_5"/>
-    
-    <jointpos name="calf_motor_pos_leg_6" joint="calf_motor_link_joint_leg_6"/>
-    <jointpos name="parallel_link_top_pos_leg_6" joint="parallel_link_top_joint_leg_6"/>
-    <jointpos name="parallel_link_bottom_pos_leg_6" joint="parallel_link_bottom_joint_leg_6"/>
-    <jointvel name="calf_motor_vel_leg_6" joint="calf_motor_link_joint_leg_6"/>
-    <jointvel name="parallel_link_top_vel_leg_6" joint="parallel_link_top_joint_leg_6"/>
-    <jointvel name="parallel_link_bottom_vel_leg_6" joint="parallel_link_bottom_joint_leg_6"/>
+    <!-- Foot sensors -->
+    <framelinvel objtype="site" objname="foot_site_1" name="foot_site_1_global_linvel"/>
+    <framepos objtype="site" objname="foot_site_1" name="foot_site_1_pos" reftype="site" refname="imu"/>
+    <framelinvel objtype="site" objname="foot_site_2" name="foot_site_2_global_linvel"/>
+    <framepos objtype="site" objname="foot_site_2" name="foot_site_2_pos" reftype="site" refname="imu"/>
+    <framelinvel objtype="site" objname="foot_site_3" name="foot_site_3_global_linvel"/>
+    <framepos objtype="site" objname="foot_site_3" name="foot_site_3_pos" reftype="site" refname="imu"/>
+    <framelinvel objtype="site" objname="foot_site_4" name="foot_site_4_global_linvel"/>
+    <framepos objtype="site" objname="foot_site_4" name="foot_site_4_pos" reftype="site" refname="imu"/>
+    <framelinvel objtype="site" objname="foot_site_5" name="foot_site_5_global_linvel"/>
+    <framepos objtype="site" objname="foot_site_5" name="foot_site_5_pos" reftype="site" refname="imu"/>
+    <framelinvel objtype="site" objname="foot_site_6" name="site_foot_6_global_linvel"/>
+    <framepos objtype="site" objname="foot_site_6" name="foot_site_6_pos" reftype="site" refname="imu"/>
   </sensor>
 
 

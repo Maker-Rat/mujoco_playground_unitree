@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Joystick task for Go2."""
+"""Joystick task for Hexapod."""
 
 from typing import Any, Dict, Optional, Union
 
@@ -25,8 +25,8 @@ import numpy as np
 
 from mujoco_playground._src import collision
 from mujoco_playground._src import mjx_env
-from mujoco_playground._src.locomotion.go2 import base as go2_base
-from mujoco_playground._src.locomotion.go2 import go2_constants as consts
+from mujoco_playground._src.locomotion.spiderbot import base as spiderbot_base
+from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as consts
 
 
 def default_config() -> config_dict.ConfigDict:
@@ -86,15 +86,15 @@ def default_config() -> config_dict.ConfigDict:
       ),
       command_config=config_dict.create(
           # Uniform distribution for command amplitude.
-          a=[1.5, 0.8, 1.2],
+          a=[1.0, 0.6, 0.8],  # Adjusted for spiderbot stability
           # Probability of not zeroing out new command.
           b=[0.9, 0.25, 0.5],
       ),
   )
 
 
-class Joystick(go2_base.Go2Env):
-  """Track a joystick command."""
+class Joystick(spiderbot_base.HexapodEnv):
+  """Track a joystick command for spiderbot."""
 
   def __init__(
       self,
@@ -202,9 +202,9 @@ class Joystick(go2_base.Go2Env):
         "steps_until_next_cmd": steps_until_next_cmd,
         "last_act": jp.zeros(self.mjx_model.nu),
         "last_last_act": jp.zeros(self.mjx_model.nu),
-        "feet_air_time": jp.zeros(4),
-        "last_contact": jp.zeros(4, dtype=bool),
-        "swing_peak": jp.zeros(4),
+        "feet_air_time": jp.zeros(6),  # Changed to 6 for spiderbot
+        "last_contact": jp.zeros(6, dtype=bool),  # Changed to 6 for spiderbot
+        "swing_peak": jp.zeros(6),  # Changed to 6 for spiderbot
         "steps_until_next_pert": steps_until_next_pert,
         "pert_duration_seconds": pert_duration_seconds,
         "pert_duration": pert_duration_steps,
@@ -223,18 +223,9 @@ class Joystick(go2_base.Go2Env):
     reward, done = jp.zeros(2)
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
-  # def _reset_if_outside_bounds(self, state: mjx_env.State) -> mjx_env.State:
-  #   qpos = state.data.qpos
-  #   new_x = jp.where(jp.abs(qpos[0]) > 9.5, 0.0, qpos[0])
-  #   new_y = jp.where(jp.abs(qpos[1]) > 9.5, 0.0, qpos[1])
-  #   qpos = qpos.at[0:2].set(jp.array([new_x, new_y]))
-  #   state = state.replace(data=state.data.replace(qpos=qpos))
-  #   return state
-
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
-    # state = self._reset_if_outside_bounds(state)
 
     motor_targets = self._default_pose + action * self._config.action_scale
     data = mjx_env.step(
@@ -340,33 +331,34 @@ class Joystick(go2_base.Go2Env):
         * self._config.noise_config.scales.linvel
     )
 
+    # Adjusted state vector - assuming 18 joints for spiderbot (3 per leg × 6 legs)
     state = jp.hstack([
         noisy_linvel,  # 3
         noisy_gyro,  # 3
         noisy_gravity,  # 3
-        noisy_joint_angles - self._default_pose,  # 12
-        noisy_joint_vel,  # 12
-        info["last_act"],  # 12
+        noisy_joint_angles - self._default_pose,  # 18 for spiderbot
+        noisy_joint_vel,  # 18 for spiderbot
+        info["last_act"],  # 18 for spiderbot
         info["command"],  # 3
     ])
 
-    accelerometer = self.get_accelerometer(data)
+    # accelerometer = self.get_accelerometer(data)
     angvel = self.get_global_angvel(data)
     feet_vel = data.sensordata[self._foot_linvel_sensor_adr].ravel()
 
+    # Adjusted privileged state for spiderbot
     privileged_state = jp.hstack([
         state,
-        gyro,  # 3
-        accelerometer,  # 3
+        gyro,  # 3 # accelerometer,  # 3
         gravity,  # 3
         linvel,  # 3
         angvel,  # 3
-        joint_angles - self._default_pose,  # 12
-        joint_vel,  # 12
-        data.actuator_force,  # 12
-        info["last_contact"],  # 4
-        feet_vel,  # 4*3
-        info["feet_air_time"],  # 4
+        joint_angles - self._default_pose,  # 18 for spiderbot
+        joint_vel,  # 18 for spiderbot
+        data.actuator_force,  # 18 for spiderbot
+        info["last_contact"],  # 6 for spiderbot
+        feet_vel,  # 6*3 for spiderbot
+        info["feet_air_time"],  # 6 for spiderbot
         data.xfrc_applied[self._torso_body_id, :3],  # 3
         info["steps_since_last_pert"] >= info["steps_until_next_pert"],  # 1
     ])
@@ -472,7 +464,9 @@ class Joystick(go2_base.Go2Env):
 
   def _reward_pose(self, qpos: jax.Array) -> jax.Array:
     # Stay close to the default pose.
-    weight = jp.array([1.0, 1.0, 0.1] * 4)
+    # Modified weight array to handle 18 joints (3 per leg x 6 legs)
+    # Format: [coxa, femur, tibia] x 6 legs
+    weight = jp.array([1.0, 1.0, 0.1] * 6)
     return jp.exp(-jp.sum(jp.square(qpos - self._default_pose) * weight))
 
   def _cost_stand_still(
