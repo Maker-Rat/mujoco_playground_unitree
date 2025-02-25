@@ -29,6 +29,7 @@ from mujoco_playground._src.locomotion.spiderbot import base as spiderbot_base
 from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as consts
 
 
+
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
       ctrl_dt=0.02,
@@ -109,9 +110,14 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     )
     self._post_init()
 
+
+  def _actuator_joint_angles(self, qpos: jax.Array) -> jax.Array:
+    indices = [8, 9, 12, 13, 16, 17, 20, 21, 24, 25, 28, 29] 
+    return jp.array([qpos[i] for i in indices])
+
   def _post_init(self) -> None:
     self._init_q = jp.array(self._mj_model.keyframe("home").qpos)
-    self._default_pose = jp.array(self._mj_model.keyframe("home").qpos[7:])
+    self._default_pose = jp.array(self._actuator_joint_angles(self._mj_model.keyframe("home").qpos))
 
     # Note: First joint is freejoint.
     self._lowers, self._uppers = self.mj_model.jnt_range[1:].T
@@ -162,7 +168,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         jax.random.uniform(key, (6,), minval=-0.5, maxval=0.5)
     )
 
-    data = mjx_env.init(self.mjx_model, qpos=qpos, qvel=qvel, ctrl=qpos[7:])
+    data = mjx_env.init(self.mjx_model,qpos=qpos,qvel=qvel,ctrl=self._actuator_joint_angles(qpos))
 
     rng, key1, key2, key3 = jax.random.split(rng, 4)
     time_until_next_pert = jax.random.uniform(
@@ -304,7 +310,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         * self._config.noise_config.scales.gravity
     )
 
-    joint_angles = data.qpos[7:]
+    joint_angles = self._actuator_joint_angles(qpos=data.qpos)
     info["rng"], noise_rng = jax.random.split(info["rng"])
     noisy_joint_angles = (
         joint_angles
@@ -389,9 +395,9 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         "lin_vel_z": self._cost_lin_vel_z(self.get_global_linvel(data)),
         "ang_vel_xy": self._cost_ang_vel_xy(self.get_global_angvel(data)),
         "orientation": self._cost_orientation(self.get_upvector(data)),
-        "stand_still": self._cost_stand_still(info["command"], data.qpos[7:]),
+        "stand_still": self._cost_stand_still(info["command"], self._actuator_joint_angles(data.qpos)),
         "termination": self._cost_termination(done),
-        "pose": self._reward_pose(data.qpos[7:]),
+        "pose": self._reward_pose(self._actuator_joint_angles(data.qpos)),
         "torques": self._cost_torques(data.actuator_force),
         "action_rate": self._cost_action_rate(
             action, info["last_act"], info["last_last_act"]
@@ -405,7 +411,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         "feet_air_time": self._reward_feet_air_time(
             info["feet_air_time"], first_contact, info["command"]
         ),
-        "dof_pos_limits": self._cost_joint_pos_limits(data.qpos[7:]),
+        "dof_pos_limits": self._cost_joint_pos_limits(self._actuator_joint_angles(data.qpos)),
     }
 
   # Tracking rewards.
