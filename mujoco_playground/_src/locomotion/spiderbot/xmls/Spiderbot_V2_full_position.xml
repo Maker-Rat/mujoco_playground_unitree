@@ -12,10 +12,10 @@
 
   <asset>
     <mesh name="base_link" file="base_link.STL"/>
-    <mesh name="calf_motor_link_leg_1" file="calf_motor_link_leg_1.STL"/>
+    <mesh name="calf_motor_link_leg_1" file="calf_motor_link_leg_1.STL" maxhullvert="30"/>
     <mesh name="parallel_link_top_leg_1" file="parallel_link_top_leg_1.STL"/>
     <mesh name="last_link_leg_1" file="last_link_leg_1.STL"/>
-    <mesh name="parallel_link_bottom_leg_1" file="parallel_link_bottom_leg_1.STL"/>
+    <mesh name="parallel_link_bottom_leg_1" file="parallel_link_bottom_leg_1.STL" maxhullvert="30"/>
     
     <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="1 1 1" width="300" height="300"/>
     <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
