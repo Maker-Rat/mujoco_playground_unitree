@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="Spiderbot_V2">
+  <compiler angle="radian" meshdir="./assets/"/>
+
+  <option gravity="0 0 -9.81" timestep="0.002">
+    <flag contact="enable" gravity="enable"/>
+  </option>
+
+  <asset>
+    <mesh name="base_link" file="base_link.STL"/>
+    <mesh name="calf_motor_link_leg_1" file="calf_motor_link_leg_1.STL"/>
+    <mesh name="parallel_link_top_leg_1" file="parallel_link_top_leg_1.STL"/>
+    <mesh name="last_link_leg_1" file="last_link_leg_1.STL"/>
+    <mesh name="parallel_link_bottom_leg_1" file="parallel_link_bottom_leg_1.STL"/>
+    
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="1 1 1" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" type="plane" size="10 10 0.1" material="groundplane" 
+          contype="1" conaffinity="1" condim="3" 
+          friction="0.9 0.005 0.0001"/>
+    
+    <light directional="true" diffuse=".8 .8 .8" specular=".2 .2 .2" pos="0 0 5" dir="0 0 -1"/>
+    
+    <body name="base_link" pos="0 0 0.5" quat="0.707107 -0.707107 0 0">
+      <inertial pos="0 0 0" mass="7.5" diaginertia="0.1 0.1 0.1"/>
+      <joint type="free"/>
+      <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="base_link"/>
+      <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="base_link"/>
+      
+      <!-- Leg 1 (Front Right) -->
+      <body name="calf_motor_link_leg_1" pos="-0.06063 0 -0.10479" quat="0.355174 0.355177 0.611433 -0.611433">
+        <inertial pos="0.0396371 6.53548e-05 0.0269162" quat="0.2819 0.641134 0.656622 0.279869" mass="0.0662965" diaginertia="1.59253e-05 1.43284e-05 1.01106e-05"/>
+        <joint name="calf_motor_link_joint_leg_1" pos="0 0 0" axis="0 0 1" range="-1.785398 1.785398" damping="1" armature="0.1"/>
+        <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        
+        <body name="parallel_link_top_leg_1" pos="0.05696 2.8193e-05 0.032062" quat="0.999598 -7.01931e-06 0.0283637 0.000247375">
+          <inertial pos="0.0574213 -0.000598283 0.00853065" quat="0.0011598 0.561906 0.000915177 0.8272" mass="0.0486071" diaginertia="5.81563e-05 5.58283e-05 8.0324e-06"/>
+          <joint name="parallel_link_top_joint_leg_1" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          <site name="spring_site2_leg_1" type="sphere" size="0.005" pos="0.0325 0 0.0015" rgba="0 0 1 1"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          
+          <body name="last_link_leg_1" pos="0.14095 0.000625 0.03916" quat="-0.0200588 0.0200535 -0.706824 -0.706821">
+            <inertial pos="5.42171e-09 -0.0445221 -1.38847e-05" quat="0.707214 0.707 0 0" mass="0.00995476" diaginertia="1.99548e-05 1.94298e-05 5.85385e-07"/>
+            <joint name="last_link_joint_leg_1" pos="0 0 0" axis="0 0 1" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+            <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <site name="site1_leg_1" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <site name="spring_site1_leg_1" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+          </body>
+        </body>
+        
+        <body name="parallel_link_bottom_leg_1" pos="0.05696 2.8193e-05 -0.017938" quat="0.000233943 0.313076 7.7119e-05 -0.949728">
+          <inertial pos="-0.0683401 -0.000625 -0.0307334" quat="0.593746 0.384012 0.384012 0.593746" mass="0.0100035" diaginertia="1.70954e-05 1.69661e-05 2.95998e-07"/>
+          <joint name="parallel_link_bottom_joint_leg_1" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <geom type="mesh" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <site name="site2_leg_1" type="sphere" size="0.005" pos="-0.133 0 -0.06" rgba="1 0 0 1"/>
+        </body>
+      </body>
+
+      <!-- Leg 2 (Front Left) - Rotated 60 degrees -->
+      <body name="calf_motor_link_leg_2" pos="0.06063 0 -0.10479" quat="-0.6126 -0.6121 -0.3534 0.3536">
+        <inertial pos="0.0396371 6.53548e-05 0.0269162" quat="0.2819 0.641134 0.656622 0.279869" mass="0.0662965" diaginertia="1.59253e-05 1.43284e-05 1.01106e-05"/>
+        <joint name="calf_motor_link_joint_leg_2" pos="0 0 0" axis="0 0 1" range="-1.785398 1.785398" damping="1" armature="0.1"/>
+        <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        
+        <body name="parallel_link_top_leg_2" pos="0.05696 2.8193e-05 0.032062" quat="0.999598 -7.01931e-06 0.0283637 0.000247375">
+          <inertial pos="0.0574213 -0.000598283 0.00853065" quat="0.0011598 0.561906 0.000915177 0.8272" mass="0.0486071" diaginertia="5.81563e-05 5.58283e-05 8.0324e-06"/>
+          <joint name="parallel_link_top_joint_leg_2" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          <site name="spring_site2_leg_2" type="sphere" size="0.005" pos="0.0325 0 0.0015" rgba="0 0 1 1"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          
+          <body name="last_link_leg_2" pos="0.14095 0.000625 0.03916" quat="-0.0200588 0.0200535 -0.706824 -0.706821">
+            <inertial pos="5.42171e-09 -0.0445221 -1.38847e-05" quat="0.707214 0.707 0 0" mass="0.00995476" diaginertia="1.99548e-05 1.94298e-05 5.85385e-07"/>
+            <joint name="last_link_joint_leg_2" pos="0 0 0" axis="0 0 1" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+            <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <site name="site1_leg_2" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <site name="spring_site1_leg_2" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+          </body>
+        </body>
+        
+        <body name="parallel_link_bottom_leg_2" pos="0.05696 2.8193e-05 -0.017938" quat="0.000233943 0.313076 7.7119e-05 -0.949728">
+          <inertial pos="-0.0683401 -0.000625 -0.0307334" quat="0.593746 0.384012 0.384012 0.593746" mass="0.0100035" diaginertia="1.70954e-05 1.69661e-05 2.95998e-07"/>
+          <joint name="parallel_link_bottom_joint_leg_2" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <geom type="mesh" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <site name="site2_leg_2" type="sphere" size="0.005" pos="-0.133 0 -0.06" rgba="1 0 0 1"/>
+        </body>
+      </body>
+
+      <!-- Leg 3 (Middle Right) - Rotated 120 degrees -->
+      <body name="calf_motor_link_leg_3" pos="0.121065 0 -0.0" quat="0.707 0.707 0.0 0.0">
+        <inertial pos="0.0396371 6.53548e-05 0.0269162" quat="0.2819 0.641134 0.656622 0.279869" mass="0.0662965" diaginertia="1.59253e-05 1.43284e-05 1.01106e-05"/>
+        <joint name="calf_motor_link_joint_leg_3" pos="0 0 0" axis="0 0 1" range="-1.785398 1.785398" damping="1" armature="0.1"/>
+        <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        
+        <body name="parallel_link_top_leg_3" pos="0.05696 2.8193e-05 0.032062" quat="0.999598 -7.01931e-06 0.0283637 0.000247375">
+          <inertial pos="0.0574213 -0.000598283 0.00853065" quat="0.0011598 0.561906 0.000915177 0.8272" mass="0.0486071" diaginertia="5.81563e-05 5.58283e-05 8.0324e-06"/>
+          <joint name="parallel_link_top_joint_leg_3" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          <site name="spring_site2_leg_3" type="sphere" size="0.005" pos="0.0325 0 0.0015" rgba="0 0 1 1"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          
+          <body name="last_link_leg_3" pos="0.14095 0.000625 0.03916" quat="-0.0200588 0.0200535 -0.706824 -0.706821">
+            <inertial pos="5.42171e-09 -0.0445221 -1.38847e-05" quat="0.707214 0.707 0 0" mass="0.00995476" diaginertia="1.99548e-05 1.94298e-05 5.85385e-07"/>
+            <joint name="last_link_joint_leg_3" pos="0 0 0" axis="0 0 1" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+            <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <site name="site1_leg_3" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <site name="spring_site1_leg_3" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+          </body>
+        </body>
+        
+        <body name="parallel_link_bottom_leg_3" pos="0.05696 2.8193e-05 -0.017938" quat="0.000233943 0.313076 7.7119e-05 -0.949728">
+          <inertial pos="-0.0683401 -0.000625 -0.0307334" quat="0.593746 0.384012 0.384012 0.593746" mass="0.0100035" diaginertia="1.70954e-05 1.69661e-05 2.95998e-07"/>
+          <joint name="parallel_link_bottom_joint_leg_3" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <geom type="mesh" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <site name="site2_leg_3" type="sphere" size="0.005" pos="-0.133 0 -0.06" rgba="1 0 0 1"/>
+        </body>
+      </body>
+
+      <!-- Leg 4 (Middle Left) - Rotated 180 degrees -->
+      <body name="calf_motor_link_leg_4" pos="0.06063 0 0.10479" quat="0.6126 0.6121 -0.3534 0.3536">
+        <inertial pos="0.0396371 6.53548e-05 0.0269162" quat="0.2819 0.641134 0.656622 0.279869" mass="0.0662965" diaginertia="1.59253e-05 1.43284e-05 1.01106e-05"/>
+        <joint name="calf_motor_link_joint_leg_4" pos="0 0 0" axis="0 0 1" range="-1.785398 1.785398" damping="1" armature="0.1"/>
+        <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        
+        <body name="parallel_link_top_leg_4" pos="0.05696 2.8193e-05 0.032062" quat="0.999598 -7.01931e-06 0.0283637 0.000247375">
+          <inertial pos="0.0574213 -0.000598283 0.00853065" quat="0.0011598 0.561906 0.000915177 0.8272" mass="0.0486071" diaginertia="5.81563e-05 5.58283e-05 8.0324e-06"/>
+          <joint name="parallel_link_top_joint_leg_4" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          <site name="spring_site2_leg_4" type="sphere" size="0.005" pos="0.0325 0 0.0015" rgba="0 0 1 1"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          
+          <body name="last_link_leg_4" pos="0.14095 0.000625 0.03916" quat="-0.0200588 0.0200535 -0.706824 -0.706821">
+            <inertial pos="5.42171e-09 -0.0445221 -1.38847e-05" quat="0.707214 0.707 0 0" mass="0.00995476" diaginertia="1.99548e-05 1.94298e-05 5.85385e-07"/>
+            <joint name="last_link_joint_leg_4" pos="0 0 0" axis="0 0 1" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+            <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <site name="site1_leg_4" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <site name="spring_site1_leg_4" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+          </body>
+        </body>
+        
+        <body name="parallel_link_bottom_leg_4" pos="0.05696 2.8193e-05 -0.017938" quat="0.000233943 0.313076 7.7119e-05 -0.949728">
+          <inertial pos="-0.0683401 -0.000625 -0.0307334" quat="0.593746 0.384012 0.384012 0.593746" mass="0.0100035" diaginertia="1.70954e-05 1.69661e-05 2.95998e-07"/>
+          <joint name="parallel_link_bottom_joint_leg_4" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <geom type="mesh" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <site name="site2_leg_4" type="sphere" size="0.005" pos="-0.133 0 -0.06" rgba="1 0 0 1"/>
+        </body>
+      </body>
+
+      <!-- Leg 5 (Back Right) - Rotated 240 degrees -->
+      <body name="calf_motor_link_leg_5" pos="-0.06063 0 0.10479" quat="0.353 0.3527 -0.6125 0.613">
+        <inertial pos="0.0396371 6.53548e-05 0.0269162" quat="0.2819 0.641134 0.656622 0.279869" mass="0.0662965" diaginertia="1.59253e-05 1.43284e-05 1.01106e-05"/>
+        <joint name="calf_motor_link_joint_leg_5" pos="0 0 0" axis="0 0 1" range="-1.785398 1.785398" damping="1" armature="0.1"/>
+        <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        
+        <body name="parallel_link_top_leg_5" pos="0.05696 2.8193e-05 0.032062" quat="0.999598 -7.01931e-06 0.0283637 0.000247375">
+          <inertial pos="0.0574213 -0.000598283 0.00853065" quat="0.0011598 0.561906 0.000915177 0.8272" mass="0.0486071" diaginertia="5.81563e-05 5.58283e-05 8.0324e-06"/>
+          <joint name="parallel_link_top_joint_leg_5" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          <site name="spring_site2_leg_5" type="sphere" size="0.005" pos="0.0325 0 0.0015" rgba="0 0 1 1"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          
+          <body name="last_link_leg_5" pos="0.14095 0.000625 0.03916" quat="-0.0200588 0.0200535 -0.706824 -0.706821">
+            <inertial pos="5.42171e-09 -0.0445221 -1.38847e-05" quat="0.707214 0.707 0 0" mass="0.00995476" diaginertia="1.99548e-05 1.94298e-05 5.85385e-07"/>
+            <joint name="last_link_joint_leg_5" pos="0 0 0" axis="0 0 1" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+            <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <site name="site1_leg_5" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <site name="spring_site1_leg_5" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+          </body>
+        </body>
+        
+        <body name="parallel_link_bottom_leg_5" pos="0.05696 2.8193e-05 -0.017938" quat="0.000233943 0.313076 7.7119e-05 -0.949728">
+          <inertial pos="-0.0683401 -0.000625 -0.0307334" quat="0.593746 0.384012 0.384012 0.593746" mass="0.0100035" diaginertia="1.70954e-05 1.69661e-05 2.95998e-07"/>
+          <joint name="parallel_link_bottom_joint_leg_5" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <geom type="mesh" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <site name="site2_leg_5" type="sphere" size="0.005" pos="-0.133 0 -0.06" rgba="1 0 0 1"/>
+        </body>
+      </body>
+
+      <!-- Leg 6 (Back Left) - Rotated 300 degrees -->
+      <body name="calf_motor_link_leg_6" pos="-0.121065 0 -0.0" quat="0 0 -0.707 0.707">
+        <inertial pos="0.0396371 6.53548e-05 0.0269162" quat="0.2819 0.641134 0.656622 0.279869" mass="0.0662965" diaginertia="1.59253e-05 1.43284e-05 1.01106e-05"/>
+        <joint name="calf_motor_link_joint_leg_6" pos="0 0 0" axis="0 0 1" range="-1.785398 1.785398" damping="1" armature="0.1"/>
+        <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="calf_motor_link_leg_1"/>
+        
+        <body name="parallel_link_top_leg_6" pos="0.05696 2.8193e-05 0.032062" quat="0.999598 -7.01931e-06 0.0283637 0.000247375">
+          <inertial pos="0.0574213 -0.000598283 0.00853065" quat="0.0011598 0.561906 0.000915177 0.8272" mass="0.0486071" diaginertia="5.81563e-05 5.58283e-05 8.0324e-06"/>
+          <joint name="parallel_link_top_joint_leg_6" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          <site name="spring_site2_leg_6" type="sphere" size="0.005" pos="0.0325 0 0.0015" rgba="0 0 1 1"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="parallel_link_top_leg_1"/>
+          
+          <body name="last_link_leg_6" pos="0.14095 0.000625 0.03916" quat="-0.0200588 0.0200535 -0.706824 -0.706821">
+            <inertial pos="5.42171e-09 -0.0445221 -1.38847e-05" quat="0.707214 0.707 0 0" mass="0.00995476" diaginertia="1.99548e-05 1.94298e-05 5.85385e-07"/>
+            <joint name="last_link_joint_leg_6" pos="0 0 0" axis="0 0 1" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+            <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <geom type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="last_link_leg_1"/>
+            <site name="site1_leg_6" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+            <site name="spring_site1_leg_6" type="sphere" size="0.005" pos="0 -0.05 0" rgba="1 0 0 1"/>
+          </body>
+        </body>
+        
+        <body name="parallel_link_bottom_leg_6" pos="0.05696 2.8193e-05 -0.017938" quat="0.000233943 0.313076 7.7119e-05 -0.949728">
+          <inertial pos="-0.0683401 -0.000625 -0.0307334" quat="0.593746 0.384012 0.384012 0.593746" mass="0.0100035" diaginertia="1.70954e-05 1.69661e-05 2.95998e-07"/>
+          <joint name="parallel_link_bottom_joint_leg_6" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" damping="1" armature="0.1"/>
+          <geom type="mesh" contype="1" conaffinity="1" group="1" density="1000" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <geom type="mesh" rgba="0.231373 0.380392 0.705882 1" mesh="parallel_link_bottom_leg_1"/>
+          <site name="site2_leg_6" type="sphere" size="0.005" pos="-0.133 0 -0.06" rgba="1 0 0 1"/>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <equality>
+    <!-- Kinematic constraints for each leg -->
+    <connect name="kinematic_link_leg_1" active="true" site1="site1_leg_1" site2="site2_leg_1" solref=".02 1" solimp=".9 .95 .001"/>
+    <connect name="kinematic_link_leg_2" active="true" site1="site1_leg_2" site2="site2_leg_2" solref=".02 1" solimp=".9 .95 .001"/>
+    <connect name="kinematic_link_leg_3" active="true" site1="site1_leg_3" site2="site2_leg_3" solref=".02 1" solimp=".9 .95 .001"/>
+    <connect name="kinematic_link_leg_4" active="true" site1="site1_leg_4" site2="site2_leg_4" solref=".02 1" solimp=".9 .95 .001"/>
+    <connect name="kinematic_link_leg_5" active="true" site1="site1_leg_5" site2="site2_leg_5" solref=".02 1" solimp=".9 .95 .001"/>
+    <connect name="kinematic_link_leg_6" active="true" site1="site1_leg_6" site2="site2_leg_6" solref=".02 1" solimp=".9 .95 .001"/>
+  </equality>
+
+  <actuator>
+    <!-- Actuators for all legs -->
+    <position name="calf_motor_actuator_leg_1" joint="calf_motor_link_joint_leg_1" gear="1" ctrlrange="-0.75 0.75" kp="12.5" kv="0.075"/>
+    <position name="parallel_link_top_actuator_leg_1" joint="parallel_link_top_joint_leg_1" gear="1" ctrlrange="-0.4 0.625" kp="20" kv="0.07"/>
+    
+    <position name="calf_motor_actuator_leg_2" joint="calf_motor_link_joint_leg_2" gear="1" ctrlrange="-0.75 0.75" kp="12.5" kv="0.075"/>
+    <position name="parallel_link_top_actuator_leg_2" joint="parallel_link_top_joint_leg_2" gear="1" ctrlrange="-0.4 0.625" kp="20" kv="0.07"/>
+    
+    <position name="calf_motor_actuator_leg_3" joint="calf_motor_link_joint_leg_3" gear="1" ctrlrange="-0.75 0.75" kp="12.5" kv="0.075"/>
+    <position name="parallel_link_top_actuator_leg_3" joint="parallel_link_top_joint_leg_3" gear="1" ctrlrange="-0.4 0.625" kp="20" kv="0.07"/>
+    
+    <position name="calf_motor_actuator_leg_4" joint="calf_motor_link_joint_leg_4" gear="1" ctrlrange="-0.75 0.75" kp="12.5" kv="0.075"/>
+    <position name="parallel_link_top_actuator_leg_4" joint="parallel_link_top_joint_leg_4" gear="1" ctrlrange="-0.4 0.625" kp="20" kv="0.07"/>
+    
+    <position name="calf_motor_actuator_leg_5" joint="calf_motor_link_joint_leg_5" gear="1" ctrlrange="-0.75 0.75" kp="12.5" kv="0.075"/>
+    <position name="parallel_link_top_actuator_leg_5" joint="parallel_link_top_joint_leg_5" gear="1" ctrlrange="-0.4 0.625" kp="20" kv="0.07"/>
+    
+    <position name="calf_motor_actuator_leg_6" joint="calf_motor_link_joint_leg_6" gear="1" ctrlrange="-0.75 0.75" kp="12.5" kv="0.075"/>
+    <position name="parallel_link_top_actuator_leg_6" joint="parallel_link_top_joint_leg_6" gear="1" ctrlrange="-0.4 0.625" kp="20" kv="0.07"/>
+  </actuator>
+  
+  <sensor>
+    <!-- Sensors for all legs -->
+    <jointpos name="calf_motor_pos_leg_1" joint="calf_motor_link_joint_leg_1"/>
+    <jointpos name="parallel_link_top_pos_leg_1" joint="parallel_link_top_joint_leg_1"/>
+    <jointpos name="parallel_link_bottom_pos_leg_1" joint="parallel_link_bottom_joint_leg_1"/>
+    <jointvel name="calf_motor_vel_leg_1" joint="calf_motor_link_joint_leg_1"/>
+    <jointvel name="parallel_link_top_vel_leg_1" joint="parallel_link_top_joint_leg_1"/>
+    <jointvel name="parallel_link_bottom_vel_leg_1" joint="parallel_link_bottom_joint_leg_1"/>
+    
+    <jointpos name="calf_motor_pos_leg_2" joint="calf_motor_link_joint_leg_2"/>
+    <jointpos name="parallel_link_top_pos_leg_2" joint="parallel_link_top_joint_leg_2"/>
+    <jointpos name="parallel_link_bottom_pos_leg_2" joint="parallel_link_bottom_joint_leg_2"/>
+    <jointvel name="calf_motor_vel_leg_2" joint="calf_motor_link_joint_leg_2"/>
+    <jointvel name="parallel_link_top_vel_leg_2" joint="parallel_link_top_joint_leg_2"/>
+    <jointvel name="parallel_link_bottom_vel_leg_2" joint="parallel_link_bottom_joint_leg_2"/>
+    
+    <jointpos name="calf_motor_pos_leg_3" joint="calf_motor_link_joint_leg_3"/>
+    <jointpos name="parallel_link_top_pos_leg_3" joint="parallel_link_top_joint_leg_3"/>
+    <jointpos name="parallel_link_bottom_pos_leg_3" joint="parallel_link_bottom_joint_leg_3"/>
+    <jointvel name="calf_motor_vel_leg_3" joint="calf_motor_link_joint_leg_3"/>
+    <jointvel name="parallel_link_top_vel_leg_3" joint="parallel_link_top_joint_leg_3"/>
+    <jointvel name="parallel_link_bottom_vel_leg_3" joint="parallel_link_bottom_joint_leg_3"/>
+    
+    <jointpos name="calf_motor_pos_leg_4" joint="calf_motor_link_joint_leg_4"/>
+    <jointpos name="parallel_link_top_pos_leg_4" joint="parallel_link_top_joint_leg_4"/>
+    <jointpos name="parallel_link_bottom_pos_leg_4" joint="parallel_link_bottom_joint_leg_4"/>
+    <jointvel name="calf_motor_vel_leg_4" joint="calf_motor_link_joint_leg_4"/>
+    <jointvel name="parallel_link_top_vel_leg_4" joint="parallel_link_top_joint_leg_4"/>
+    <jointvel name="parallel_link_bottom_vel_leg_4" joint="parallel_link_bottom_joint_leg_4"/>
+    
+    <jointpos name="calf_motor_pos_leg_5" joint="calf_motor_link_joint_leg_5"/>
+    <jointpos name="parallel_link_top_pos_leg_5" joint="parallel_link_top_joint_leg_5"/>
+    <jointpos name="parallel_link_bottom_pos_leg_5" joint="parallel_link_bottom_joint_leg_5"/>
+    <jointvel name="calf_motor_vel_leg_5" joint="calf_motor_link_joint_leg_5"/>
+    <jointvel name="parallel_link_top_vel_leg_5" joint="parallel_link_top_joint_leg_5"/>
+    <jointvel name="parallel_link_bottom_vel_leg_5" joint="parallel_link_bottom_joint_leg_5"/>
+    
+    <jointpos name="calf_motor_pos_leg_6" joint="calf_motor_link_joint_leg_6"/>
+    <jointpos name="parallel_link_top_pos_leg_6" joint="parallel_link_top_joint_leg_6"/>
+    <jointpos name="parallel_link_bottom_pos_leg_6" joint="parallel_link_bottom_joint_leg_6"/>
+    <jointvel name="calf_motor_vel_leg_6" joint="calf_motor_link_joint_leg_6"/>
+    <jointvel name="parallel_link_top_vel_leg_6" joint="parallel_link_top_joint_leg_6"/>
+    <jointvel name="parallel_link_bottom_vel_leg_6" joint="parallel_link_bottom_joint_leg_6"/>
+  </sensor>
+
+
+  <tendon>
+    <spatial range="0 .2" limited="true" width=".002" rgba=".95 .3 .3 1" springlength=".12" stiffness="500">
+    <site site="spring_site1_leg_1"/>
+    <site site="spring_site2_leg_1"/>
+    </spatial>
+  </tendon>
+
+  <tendon>
+    <spatial range="0 .2" limited="true" width=".002" rgba=".95 .3 .3 1" springlength=".12" stiffness="500">
+    <site site="spring_site1_leg_2"/>
+    <site site="spring_site2_leg_2"/>
+    </spatial>
+  </tendon>
+
+  <tendon>
+    <spatial range="0 .2" limited="true" width=".002" rgba=".95 .3 .3 1" springlength=".12" stiffness="500">
+    <site site="spring_site1_leg_3"/>
+    <site site="spring_site2_leg_3"/>
+    </spatial>
+  </tendon>
+
+  <tendon>
+    <spatial range="0 .2" limited="true" width=".002" rgba=".95 .3 .3 1" springlength=".12" stiffness="500">
+    <site site="spring_site1_leg_4"/>
+    <site site="spring_site2_leg_4"/>
+    </spatial>
+  </tendon>
+
+  <tendon>
+    <spatial range="0 .2" limited="true" width=".002" rgba=".95 .3 .3 1" springlength=".12" stiffness="500">
+    <site site="spring_site1_leg_5"/>
+    <site site="spring_site2_leg_5"/>
+    </spatial>
+  </tendon>
+
+  <tendon>
+    <spatial range="0 .2" limited="true" width=".002" rgba=".95 .3 .3 1" springlength=".12" stiffness="500">
+    <site site="spring_site1_leg_6"/>
+    <site site="spring_site2_leg_6"/>
+    </spatial>
+  </tendon>
+
+</mujoco>
