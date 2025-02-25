@@ -293,7 +293,7 @@
     <framepos objtype="site" objname="foot_site_4" name="foot_site_4_pos" reftype="site" refname="imu"/>
     <framelinvel objtype="site" objname="foot_site_5" name="foot_site_5_global_linvel"/>
     <framepos objtype="site" objname="foot_site_5" name="foot_site_5_pos" reftype="site" refname="imu"/>
-    <framelinvel objtype="site" objname="foot_site_6" name="site_foot_6_global_linvel"/>
+    <framelinvel objtype="site" objname="foot_site_6" name="foot_site_6_global_linvel"/>
     <framepos objtype="site" objname="foot_site_6" name="foot_site_6_pos" reftype="site" refname="imu"/>
   </sensor>
 
