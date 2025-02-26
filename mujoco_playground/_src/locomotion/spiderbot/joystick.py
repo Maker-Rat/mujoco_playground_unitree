@@ -114,6 +114,10 @@ class Joystick(spiderbot_base.SpiderbotEnv):
   def _actuator_joint_angles(self, qpos: jax.Array) -> jax.Array:
     indices = [8, 9, 12, 13, 16, 17, 20, 21, 24, 25, 28, 29] 
     return jp.array([qpos[i] for i in indices])
+  
+  def _actuator_joint_vels(self, qvel: jax.Array) -> jax.Array:
+    indices = [0, 1, 4, 5, 8, 9, 12, 13, 16, 17, 20, 21] 
+    return jp.array([qvel[i] for i in indices])
 
   def _post_init(self) -> None:
     self._init_q = jp.array(self._mj_model.keyframe("home").qpos)
@@ -227,12 +231,14 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     obs = self._get_obs(data, info)
     reward, done = jp.zeros(2)
+
+    print(data, obs, reward, done, metrics, info, sep="\n\n")
+    
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
-
     motor_targets = self._default_pose + action * self._config.action_scale
     data = mjx_env.step(
         self.mjx_model, state.data, motor_targets, self.n_substeps
@@ -319,7 +325,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         * self._config.noise_config.scales.joint_pos
     )
 
-    joint_vel = data.qvel[6:]
+    joint_vel = self._actuator_joint_vels(data.qvel[6:])
     info["rng"], noise_rng = jax.random.split(info["rng"])
     noisy_joint_vel = (
         joint_vel
@@ -337,41 +343,41 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         * self._config.noise_config.scales.linvel
     )
 
-    # Adjusted state vector - assuming 18 joints for spiderbot (3 per leg × 6 legs)
+    # Adjusted state vector - assuming 12 joints for spiderbot (2 per leg × 6 legs)
     state = jp.hstack([
         noisy_linvel,  # 3
         noisy_gyro,  # 3
         noisy_gravity,  # 3
-        noisy_joint_angles - self._default_pose,  # 18 for spiderbot
-        noisy_joint_vel,  # 18 for spiderbot
-        info["last_act"],  # 18 for spiderbot
+        noisy_joint_angles - self._default_pose,  # 12 for spiderbot
+        noisy_joint_vel,  # 12 for spiderbot
+        info["last_act"],  # 12 for spiderbot
         info["command"],  # 3
     ])
 
     # accelerometer = self.get_accelerometer(data)
-    angvel = self.get_global_angvel(data)
-    feet_vel = data.sensordata[self._foot_linvel_sensor_adr].ravel()
+    # angvel = self.get_global_angvel(data)
+    # feet_vel = data.sensordata[self._foot_linvel_sensor_adr].ravel()
 
     # Adjusted privileged state for spiderbot
-    privileged_state = jp.hstack([
-        state,
-        gyro,  # 3 # accelerometer,  # 3
-        gravity,  # 3
-        linvel,  # 3
-        angvel,  # 3
-        joint_angles - self._default_pose,  # 18 for spiderbot
-        joint_vel,  # 18 for spiderbot
-        data.actuator_force,  # 18 for spiderbot
-        info["last_contact"],  # 6 for spiderbot
-        feet_vel,  # 6*3 for spiderbot
-        info["feet_air_time"],  # 6 for spiderbot
-        data.xfrc_applied[self._torso_body_id, :3],  # 3
-        info["steps_since_last_pert"] >= info["steps_until_next_pert"],  # 1
-    ])
+    # privileged_state = jp.hstack([
+    #     state,
+    #     gyro,  # 3 # accelerometer,  # 3
+    #     gravity,  # 3
+    #     linvel,  # 3
+    #     angvel,  # 3
+    #     joint_angles - self._default_pose,  # 18 for spiderbot
+    #     joint_vel,  # 18 for spiderbot
+    #     data.actuator_force,  # 18 for spiderbot
+    #     info["last_contact"],  # 6 for spiderbot
+    #     feet_vel,  # 6*3 for spiderbot
+    #     info["feet_air_time"],  # 6 for spiderbot
+    #     data.xfrc_applied[self._torso_body_id, :3],  # 3
+    #     info["steps_since_last_pert"] >= info["steps_until_next_pert"],  # 1
+    # ])
 
     return {
         "state": state,
-        "privileged_state": privileged_state,
+        "privileged_state": [],
     }
 
   def _get_reward(

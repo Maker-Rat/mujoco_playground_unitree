@@ -38,7 +38,7 @@ def get_assets() -> Dict[str, bytes]:
 
 
 class SpiderbotEnv(mjx_env.MjxEnv):
-    """Base class for Go2 environments."""
+    """Base class for Spiderbot environments."""
 
     def __init__(
         self,
