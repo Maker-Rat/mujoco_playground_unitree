@@ -231,9 +231,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     obs = self._get_obs(data, info)
     reward, done = jp.zeros(2)
-
-    print(data, obs, reward, done, metrics, info, sep="\n\n")
-    
+ 
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
