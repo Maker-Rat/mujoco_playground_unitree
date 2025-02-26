@@ -125,6 +125,8 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     # Note: First joint is freejoint.
     self._lowers, self._uppers = self.mj_model.jnt_range[1:].T
+    self._lowers = self._actuator_joint_vels(self._lowers)
+    self._uppers = self._actuator_joint_vels(self._uppers)
     self._soft_lowers = self._lowers * self._config.soft_joint_pos_limit_factor
     self._soft_uppers = self._uppers * self._config.soft_joint_pos_limit_factor
 
@@ -406,7 +408,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         "action_rate": self._cost_action_rate(
             action, info["last_act"], info["last_last_act"]
         ),
-        "energy": self._cost_energy(data.qvel[6:], data.actuator_force),
+        "energy": self._cost_energy(self._actuator_joint_vels(data.qvel[6:]), data.actuator_force),
         "feet_slip": self._cost_feet_slip(data, contact, info),
         "feet_clearance": self._cost_feet_clearance(data),
         "feet_height": self._cost_feet_height(
@@ -475,8 +477,8 @@ class Joystick(spiderbot_base.SpiderbotEnv):
   def _reward_pose(self, qpos: jax.Array) -> jax.Array:
     # Stay close to the default pose.
     # Modified weight array to handle 18 joints (3 per leg x 6 legs)
-    # Format: [coxa, femur, tibia] x 6 legs
-    weight = jp.array([1.0, 1.0, 0.1] * 6)
+    # Format: [coxa, femur] x 6 legs
+    weight = jp.array([1.0, 1.0] * 6)
     return jp.exp(-jp.sum(jp.square(qpos - self._default_pose) * weight))
 
   def _cost_stand_still(
