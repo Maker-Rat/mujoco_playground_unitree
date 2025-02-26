@@ -353,29 +353,29 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     ])
 
     # accelerometer = self.get_accelerometer(data)
-    # angvel = self.get_global_angvel(data)
-    # feet_vel = data.sensordata[self._foot_linvel_sensor_adr].ravel()
+    angvel = self.get_global_angvel(data)
+    feet_vel = data.sensordata[self._foot_linvel_sensor_adr].ravel()
 
     # Adjusted privileged state for spiderbot
-    # privileged_state = jp.hstack([
-    #     state,
-    #     gyro,  # 3 # accelerometer,  # 3
-    #     gravity,  # 3
-    #     linvel,  # 3
-    #     angvel,  # 3
-    #     joint_angles - self._default_pose,  # 18 for spiderbot
-    #     joint_vel,  # 18 for spiderbot
-    #     data.actuator_force,  # 18 for spiderbot
-    #     info["last_contact"],  # 6 for spiderbot
-    #     feet_vel,  # 6*3 for spiderbot
-    #     info["feet_air_time"],  # 6 for spiderbot
-    #     data.xfrc_applied[self._torso_body_id, :3],  # 3
-    #     info["steps_since_last_pert"] >= info["steps_until_next_pert"],  # 1
-    # ])
+    privileged_state = jp.hstack([
+        state,
+        gyro,  # 3 # accelerometer,  # 3
+        gravity,  # 3
+        linvel,  # 3
+        angvel,  # 3
+        joint_angles - self._default_pose,  # 12for spiderbot
+        joint_vel,  # 12 for spiderbot
+        data.actuator_force,  # 12 for spiderbot
+        info["last_contact"],  # 6 for spiderbot
+        feet_vel,  # 6*3 for spiderbot
+        info["feet_air_time"],  # 6 for spiderbot
+        data.xfrc_applied[self._torso_body_id, :3],  # 3
+        info["steps_since_last_pert"] >= info["steps_until_next_pert"],  # 1
+    ])
 
     return {
         "state": state,
-        "privileged_state": [],
+        "privileged_state": privileged_state,
     }
 
   def _get_reward(
