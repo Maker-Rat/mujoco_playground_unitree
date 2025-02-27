@@ -239,6 +239,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
+    # debug.print("Before step: {}", self.tstep)
     self.tstep += 1
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
@@ -261,7 +262,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     obs = self._get_obs(data, state.info)
     done = self._get_termination(data)
 
-    print("Tstep:", self.tstep)
+    # print("Tstep:", self.tstep)
 
     rewards = self._get_reward(
         data, action, state.info, state.metrics, done, first_contact, contact
@@ -271,11 +272,15 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
 
+    # debug.print("Upvector z: {}", self.get_upvector(data)[-1])
+    # debug.print("Max reward component: {}", max(rewards.values()))
+    # debug.print("Min reward component: {}", min(rewards.values()))
+
     # for k, v in rewards.items():
     #     debug.print("Scaled reward {}: {}", k, v)
     # debug.print("Sum of scaled rewards: {}", sum(rewards.values()))
     
-    reward = sum(rewards.values()) * self.dt / 100.0
+    reward = sum(rewards.values()) * self.dt 
     
     # And add an explicit print right before returning
     # debug.print("Final reward being returned: {}", reward)
@@ -303,6 +308,9 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     done = done.astype(reward.dtype)
     state = state.replace(data=data, obs=obs, reward=reward, done=done)
+
+    # debug.print("After step: {}", self.tstep)
+
     return state
 
   def _get_termination(self, data: mjx.Data) -> jax.Array:
@@ -363,8 +371,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         noisy_linvel,  # 3
         noisy_gyro,  # 3
         noisy_gravity,  # 3
-        noisy_joint_angles - self._default_pose,  # 12 for spiderbot
-        noisy_joint_vel,  # 12 for spiderbot
+        noisy_joint_angles - self._default_pose,  # 12 for spiderbot # noisy_joint_vel,  # 12 for spiderbot
         info["last_act"],  # 12 for spiderbot
         info["command"],  # 3
     ])
@@ -491,7 +498,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
   def _reward_pose(self, qpos: jax.Array) -> jax.Array:
     # Stay close to the default pose.
-    # Modified weight array to handle 18 joints (3 per leg x 6 legs)
+    # Modified weight array to handle 12 joints (2 per leg x 6 legs)
     # Format: [coxa, femur] x 6 legs
     weight = jp.array([1.0, 1.0] * 6)
     return jp.exp(-jp.sum(jp.square(qpos - self._default_pose) * weight))
