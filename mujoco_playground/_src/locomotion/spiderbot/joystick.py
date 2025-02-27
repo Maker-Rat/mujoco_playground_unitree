@@ -238,7 +238,6 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
-    self.tstep += 1
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
     motor_targets = self._default_pose + action * self._config.action_scale
