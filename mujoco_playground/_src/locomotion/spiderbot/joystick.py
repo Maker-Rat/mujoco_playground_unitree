@@ -474,6 +474,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
   def _cost_orientation(self, torso_zaxis: jax.Array) -> jax.Array:
     # Penalize non flat base orientation.
+    debug.print("Upvector : {}", torso_zaxis)
     return jp.sum(jp.square(torso_zaxis[:2]))
 
   # Energy related rewards.
