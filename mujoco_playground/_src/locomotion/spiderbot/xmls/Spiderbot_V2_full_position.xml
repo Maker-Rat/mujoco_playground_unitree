@@ -59,8 +59,8 @@
   </asset>
 
   <worldbody>
-    <body name="base_link" pos="0 0 0.5" quat="0.707107 -0.707107 0 0" childclass="spider">
-    <camera name="track" pos="0.846 -1.465 0.916" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940" mode="trackcom"/>
+    <body name="base_link" pos="0 0 0.2" quat="0.707107 0 0.707107 0" childclass="spider">\
+    <!-- <camera name="track" pos="0.846 0.916 -1.465" xyaxes="0.866 0.000 0.500 -0.171 0.940 0.296" mode="trackcom"/> -->
     <inertial pos="0 0 0" mass="7.5" diaginertia="0.1 0.1 0.1"/>
     <joint type="free"/>
     <!-- Visual mesh -->
@@ -333,6 +333,8 @@
       </body>
     </body>
     </body>
+
+    <!-- <camera name="track" pos="0.846 -1.465 0.916" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940" mode="fixed"/> -->
   </worldbody>
 
   <equality>
