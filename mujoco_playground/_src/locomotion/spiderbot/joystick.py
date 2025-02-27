@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional, Union
 
 import jax
 import jax.numpy as jp
+from jax import debug
 from ml_collections import config_dict
 from mujoco import mjx
 from mujoco.mjx._src import math
@@ -156,6 +157,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
   def reset(self, rng: jax.Array) -> mjx_env.State:
     qpos = self._init_q
+    self.tstep = 0
     qvel = jp.zeros(self.mjx_model.nv)
 
     # x=+U(-0.5, 0.5), y=+U(-0.5, 0.5), yaw=U(-3.14, 3.14).
@@ -237,6 +239,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
+    self.tstep += 1
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
     motor_targets = self._default_pose + action * self._config.action_scale
@@ -258,13 +261,24 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     obs = self._get_obs(data, state.info)
     done = self._get_termination(data)
 
+    print("Tstep:", self.tstep)
+
     rewards = self._get_reward(
         data, action, state.info, state.metrics, done, first_contact, contact
     )
+
     rewards = {
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
-    reward = jp.clip(sum(rewards.values()) * self.dt, 0.0, 10000.0)
+
+    # for k, v in rewards.items():
+    #     debug.print("Scaled reward {}: {}", k, v)
+    # debug.print("Sum of scaled rewards: {}", sum(rewards.values()))
+    
+    reward = sum(rewards.values()) * self.dt / 100.0
+    
+    # And add an explicit print right before returning
+    # debug.print("Final reward being returned: {}", reward)
 
     state.info["last_last_act"] = state.info["last_act"]
     state.info["last_act"] = action
@@ -292,8 +306,9 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     return state
 
   def _get_termination(self, data: mjx.Data) -> jax.Array:
-    fall_termination = self.get_upvector(data)[-1] < 0.0
-    return fall_termination
+    # debug.print("Self.upvector: {}", self.get_upvector(data)[-1])
+    fall_termination = self.get_upvector(data)[-1] < -100000.0
+    return jp.array(False, dtype=jp.bool_)
 
   def _get_obs(
       self, data: mjx.Data, info: dict[str, Any]
