@@ -157,7 +157,6 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
   def reset(self, rng: jax.Array) -> mjx_env.State:
     qpos = self._init_q
-    self.tstep = 0
     qvel = jp.zeros(self.mjx_model.nv)
 
     # x=+U(-0.5, 0.5), y=+U(-0.5, 0.5), yaw=U(-3.14, 3.14).
@@ -239,7 +238,6 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
-    # debug.print("Before step: {}", self.tstep)
     self.tstep += 1
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
@@ -308,8 +306,6 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     done = done.astype(reward.dtype)
     state = state.replace(data=data, obs=obs, reward=reward, done=done)
-
-    # debug.print("After step: {}", self.tstep)
 
     return state
 
@@ -473,7 +469,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     return jp.sum(jp.square(global_angvel[:2]))
 
   def _cost_orientation(self, torso_zaxis: jax.Array) -> jax.Array:
-    # Penalize non flat base orientation.
+    # Penalize non flat base orientation
     return jp.sum(jp.square(torso_zaxis[:2]))
 
   # Energy related rewards.

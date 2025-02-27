@@ -143,6 +143,7 @@ class Joystick(go2_base.Go2Env):
     self._cmd_b = jp.array(self._config.command_config.b)
 
   def reset(self, rng: jax.Array) -> mjx_env.State:
+    self.tstep = 0
     qpos = self._init_q
     qvel = jp.zeros(self.mjx_model.nv)
 
@@ -232,6 +233,8 @@ class Joystick(go2_base.Go2Env):
   #   return state
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
+    print("Before step :", self.tstep)
+    self.tstep += 1
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
     # state = self._reset_if_outside_bounds(state)
@@ -286,6 +289,7 @@ class Joystick(go2_base.Go2Env):
 
     done = done.astype(reward.dtype)
     state = state.replace(data=data, obs=obs, reward=reward, done=done)
+    print("After step :", self.tstep)
     return state
 
   def _get_termination(self, data: mjx.Data) -> jax.Array:
