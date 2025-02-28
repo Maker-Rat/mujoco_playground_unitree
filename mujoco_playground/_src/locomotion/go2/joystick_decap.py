@@ -121,7 +121,7 @@ class Joystick(go2_base.Go2Env):
 
 
   def _compute_targets(self, actions_scaled):
-    index_array = self.imitation_index.detach().cpu().numpy().astype(int)
+    index_array = jp.array(self.imitation_index).astype(jp.int32)
     # Retrieve the corresponding rows from df_imit using array indexing
     dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
     # Reshape the array to the desired shape
