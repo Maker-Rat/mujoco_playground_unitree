@@ -16,6 +16,7 @@
 
 from typing import Any, Dict, Optional, Union
 
+import os
 import jax
 import jax.numpy as jp
 from ml_collections import config_dict
@@ -114,7 +115,9 @@ class Joystick(go2_base.Go2Env):
     self._post_init()
     self.imitation_index = 0
     self.torque_ref_decay_factor = 0
-    self.df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
+    script_dir = os.getcwd()
+    file = 'imitation_data/imitation_data_wtw.csv'
+    self.df_imit = pd.read_csv(os.path.join(script_dir, file), parse_dates=False)
 
 
   def _compute_targets(self, actions_scaled):
