@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional, Union
 
 import os
 import jax
+from jax import debug
 import jax.numpy as jp
 from ml_collections import config_dict
 from mujoco import mjx
@@ -113,24 +114,29 @@ class Joystick(go2_base.Go2Env):
         config_overrides=config_overrides,
     )
     self._post_init()
-    self.imitation_index = 0
+    self.imitation_index = jax.device_put(jp.zeros(1024, dtype=jp.float32), jax.devices('gpu')[0])
     self.torque_ref_decay_factor = 0
     script_dir = os.getcwd()
     file = 'imitation_data/imitation_data_wtw.csv'
     self.df_imit = pd.read_csv(os.path.join(script_dir, file), parse_dates=False)
+    self.dof_imit_lookup = jax.device_put(
+        jp.array(self.df_imit.iloc[:, 6:18].to_numpy()), 
+        jax.devices('gpu')[0]
+    )
 
 
-  def _compute_targets(self, actions_scaled):
-    index_array = jp.array(self.imitation_index).astype(jp.int32)
-    # Retrieve the corresponding rows from df_imit using array indexing
-    dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
-    # Reshape the array to the desired shape
+  def _compute_targets(self, actions_scaled, imitation_index):
+    # Extract imitation index safely
+    index_array = np.array(jax.device_get(imitation_index), dtype=np.int32)  # Convert before JAX tracing
+
+    # Fetch imitation data as a NumPy array
+    dof_imit_arr = self.df_imit.iloc[index_array, 6:18].to_numpy()
     dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-    # Convert the array to a PyTorch tensor
+
+    # Convert to JAX array
     dof_imit_arr = jp.array(dof_imit_arr)
 
-    # Combine your action with the imitation reference
-    position_targets = actions_scaled + self._default_pos + self._config.gamma_decap**(self.torque_ref_decay_factor/self._config.k_decap)*(dof_imit_arr - self._default_pos)
+    position_targets = actions_scaled + self._default_pose + self._config.gamma**(self.torque_ref_decay_factor/self._config.k_decap) * (dof_imit_arr - self._default_pose)
 
     return jp.clip(position_targets, a_min=self._soft_lowers, a_max=self._soft_uppers)
 
@@ -170,8 +176,10 @@ class Joystick(go2_base.Go2Env):
 
   def reset(self, rng: jax.Array) -> mjx_env.State:
     self.tstep = 0
-    self.imitation_index = 0
+    self.imitation_index = np.zeros(1024, dtype=np.int32)  # Store as NumPy array (not JAX)
+    self.done_np = np.zeros(1024, dtype=bool)
     self.torque_ref_decay_factor += 1
+
     qpos = self._init_q
     qvel = jp.zeros(self.mjx_model.nv)
 
@@ -241,6 +249,8 @@ class Joystick(go2_base.Go2Env):
         "pert_steps": 0,
         "pert_dir": jp.zeros(3),
         "pert_mag": pert_mag,
+        "imitation_index": self.imitation_index,
+        "done_np": np.zeros(1024, dtype=bool) 
     }
 
     metrics = {}
@@ -262,13 +272,27 @@ class Joystick(go2_base.Go2Env):
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
     self.tstep += 1
-    self.imitation_index += 1
-    if self._config.pert_config.enable:
-      state = self._maybe_apply_perturbation(state)
-    # state = self._reset_if_outside_bounds(state)
 
-    #motor_targets = self._default_pose + action * self._config.action_scale
-    motor_targets = self._compute_targets(action * self._config.action_scale)
+    # done_as_bool = state.done > 0  # Convert to boolean JAX array
+    # new_done_np = jp.logical_or(self.done_np, done_as_bool)
+    # new_imitation_index = self.imitation_index + 1
+    # new_imitation_index = jp.where(new_done_np, 0, new_imitation_index)
+
+    # # Then update the info dictionary:
+    # state.info["done_np"] = new_done_np
+    # state.info["imitation_index"] = new_imitation_index
+    # self.done_np = new_done_np
+    # self.imitation_index = new_imitation_index
+
+    # Pass NumPy array safely to _compute_targets()
+    new_imitation_index = state.info["imitation_index"] + 1
+    new_imitation_index = jp.where(state.done > 0, 0, new_imitation_index)
+    state = state.replace(info=dict(state.info, imitation_index=new_imitation_index))
+
+    # Then pass state.info["imitation_index"] to _compute_targets:
+    motor_targets = self._compute_targets(action * self._config.action_scale, state.info["imitation_index"])
+    debug.print("Action : {}", motor_targets)
+
     data = mjx_env.step(
         self.mjx_model, state.data, motor_targets, self.n_substeps
     )

@@ -55,18 +55,18 @@ def default_config() -> config_dict.ConfigDict:
       reward_config=config_dict.create(
           scales=config_dict.create(
               # Tracking.
-              tracking_lin_vel=1.0,
-              tracking_ang_vel=0.5,
+              tracking_lin_vel=1.5,
+              tracking_ang_vel=1.0,
               # Base reward.
-              lin_vel_z=-0.5,
-              ang_vel_xy=-0.05,
-              orientation=-5.0,
+              lin_vel_z=-0.75,
+              ang_vel_xy=-0.025,
+              orientation=-2.5,
               # Other.
-              dof_pos_limits=-1.0,
-              pose=0.5,
+              dof_pos_limits=-0.5,
+              pose=0.2,
               # Other.
               termination=-1.0,
-              stand_still=-1.0,
+              stand_still=-0.25,
               # Regularization.
               torques=-0.0002,
               action_rate=-0.01,
@@ -78,7 +78,7 @@ def default_config() -> config_dict.ConfigDict:
               feet_air_time=0.1,
           ),
           tracking_sigma=0.25,
-          max_foot_height=0.1,
+          max_foot_height=0.15,
       ),
       pert_config=config_dict.create(
           enable=False,
@@ -268,19 +268,11 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     rewards = {
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
-
-    # debug.print("Upvector z: {}", self.get_upvector(data)[-1])
-    # debug.print("Max reward component: {}", max(rewards.values()))
-    # debug.print("Min reward component: {}", min(rewards.values()))
-
-    # for k, v in rewards.items():
-    #     debug.print("Scaled reward {}: {}", k, v)
-    # debug.print("Sum of scaled rewards: {}", sum(rewards.values()))
     
     reward = sum(rewards.values()) * self.dt 
     
     # And add an explicit print right before returning
-    # debug.print("Final reward being returned: {}", reward)
+    debug.print("Final reward being returned: {}", reward)
 
     state.info["last_last_act"] = state.info["last_act"]
     state.info["last_act"] = action
@@ -310,8 +302,8 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
   def _get_termination(self, data: mjx.Data) -> jax.Array:
     # debug.print("Self.upvector: {}", self.get_upvector(data)[-1])
-    fall_termination = self.get_upvector(data)[-1] < -100000.0
-    return jp.array(False, dtype=jp.bool_)
+    fall_termination = self.get_upvector(data)[-1] < -0.1
+    return fall_termination
 
   def _get_obs(
       self, data: mjx.Data, info: dict[str, Any]
@@ -423,17 +415,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         "pose": self._reward_pose(self._actuator_joint_angles(data.qpos)),
         "torques": self._cost_torques(data.actuator_force),
         "action_rate": self._cost_action_rate(
-            action, info["last_act"], info["last_last_act"]
-        ),
-        "energy": self._cost_energy(self._actuator_joint_vels(data.qvel[6:]), data.actuator_force),
-        "feet_slip": self._cost_feet_slip(data, contact, info),
-        "feet_clearance": self._cost_feet_clearance(data),
-        "feet_height": self._cost_feet_height(
-            info["swing_peak"], first_contact, info
-        ),
-        "feet_air_time": self._reward_feet_air_time(
-            info["feet_air_time"], first_contact, info["command"]
-        ),
+            action, info["last_act"], info["last_last_act"]),
         "dof_pos_limits": self._cost_joint_pos_limits(self._actuator_joint_angles(data.qpos)),
     }
 
@@ -445,6 +427,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
       local_vel: jax.Array,
   ) -> jax.Array:
     # Tracking of linear velocity commands (xy axes).
+    debug.print("Linear Velocity : {}", local_vel)
     lin_vel_error = jp.sum(jp.square(commands[:2] - local_vel[:2]))
     return jp.exp(-lin_vel_error / self._config.reward_config.tracking_sigma)
 
