@@ -272,7 +272,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     reward = sum(rewards.values()) * self.dt 
     
     # And add an explicit print right before returning
-    debug.print("Final reward being returned: {}", reward)
+    # debug.print("Final reward being returned: {}", reward)
 
     state.info["last_last_act"] = state.info["last_act"]
     state.info["last_act"] = action
@@ -427,7 +427,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
       local_vel: jax.Array,
   ) -> jax.Array:
     # Tracking of linear velocity commands (xy axes).
-    debug.print("Linear Velocity : {}", local_vel)
+    # debug.print("Linear Velocity : {}", local_vel)
     lin_vel_error = jp.sum(jp.square(commands[:2] - local_vel[:2]))
     return jp.exp(-lin_vel_error / self._config.reward_config.tracking_sigma)
 
