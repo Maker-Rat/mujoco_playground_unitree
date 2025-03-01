@@ -63,7 +63,7 @@ def default_config() -> config_dict.ConfigDict:
               orientation=-2.5,
               # Other.
               dof_pos_limits=-0.5,
-              pose=0.2,
+              pose=0.05,
               # Other.
               termination=-1.0,
               stand_still=-0.25,
@@ -269,7 +269,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
     
-    reward = sum(rewards.values()) * self.dt 
+    reward = sum(rewards.values()) * self.dt * 0.035
     
     # And add an explicit print right before returning
     # debug.print("Final reward being returned: {}", reward)

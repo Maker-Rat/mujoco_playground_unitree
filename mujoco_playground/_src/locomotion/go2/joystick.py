@@ -233,7 +233,7 @@ class Joystick(go2_base.Go2Env):
   #   return state
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
-    print("Before step :", self.tstep)
+    # print("Before step :", self.tstep)
     self.tstep += 1
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
@@ -289,7 +289,7 @@ class Joystick(go2_base.Go2Env):
 
     done = done.astype(reward.dtype)
     state = state.replace(data=data, obs=obs, reward=reward, done=done)
-    print("After step :", self.tstep)
+    # print("After step :", self.tstep)
     return state
 
   def _get_termination(self, data: mjx.Data) -> jax.Array:
