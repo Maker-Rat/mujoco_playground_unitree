@@ -80,6 +80,11 @@ def default_config() -> config_dict.ConfigDict:
               feet_height=-0.2,
               feet_slip=-0.1,
               feet_air_time=0.1,
+              # Imitation Rewards
+              imitation_angles=1.0,
+              imitation_lin_vel=0.5,
+              imitation_ang_vel=0.5,
+              imitation_height=0.2,
           ),
           tracking_sigma=0.25,
           max_foot_height=0.1,
@@ -238,6 +243,10 @@ class Joystick(go2_base.Go2Env):
 
     obs = self._get_obs(data, info)
     reward, done = jp.zeros(2)
+
+    rng = jax.random.PRNGKey(0)
+    act_rng, rng = jax.random.split(rng)
+    self.dof_imit_arr, _ = self.pos_policy(obs, act_rng)
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
   # def _reset_if_outside_bounds(self, state: mjx_env.State) -> mjx_env.State:
@@ -253,10 +262,10 @@ class Joystick(go2_base.Go2Env):
 
     rng = jax.random.PRNGKey(0)
     act_rng, rng = jax.random.split(rng)
-    dof_imit_arr, _ = self.pos_policy(state.obs, act_rng)
+    self.dof_imit_arr, _ = self.pos_policy(state.obs, act_rng)
 
     # Then pass ctrl to _compute_targets:
-    motor_targets = self._compute_targets(action * self._config.action_scale, dof_imit_arr)
+    motor_targets = self._compute_targets(action * self._config.action_scale, self.dof_imit_arr)
     # debug.print("Action : {}", motor_targets)
 
     data = mjx_env.step(
@@ -436,6 +445,9 @@ class Joystick(go2_base.Go2Env):
             info["feet_air_time"], first_contact, info["command"]
         ),
         "dof_pos_limits": self._cost_joint_pos_limits(data.qpos[7:]),
+        "imitation_angles": self._reward_imitation_angles(data, self.dof_imit_arr),
+        "imitation_lin_vel": self._reward_imitation_lin_vel(self.get_local_linvel(data), info),
+        "imitation_ang_vel": self._reward_imitation_ang_vel(self.get_gyro(data), info),
     }
 
   # Tracking rewards.
@@ -621,3 +633,38 @@ class Joystick(go2_base.Go2Env):
     w_k = jax.random.bernoulli(w_rng, 0.5, shape=(3,))
     x_kp1 = x_k - w_k * (x_k - y_k * z_k)
     return x_kp1
+
+  def _reward_imitation_angles(self, data: mjx.Data, dof_imit_arr: jax.Array) -> jax.Array:
+    """
+    Reward for matching joint angles to imitation reference.
+    """
+    # Compute joint angle error 
+    dof_pos = data.qpos[7:]  # Exclude root joint
+    dof_imit_error = jp.sum(jp.square(dof_pos - dof_imit_arr))
+    
+    # Return exponential reward with tracking sigma
+    return jp.exp(-dof_imit_error / self._config.reward_config.tracking_sigma)
+
+  def _reward_imitation_lin_vel(self, lin_vel: jax.Array, info: dict) -> jax.Array:
+      """
+      Reward for matching linear velocity to imitation reference.
+      """
+      lin_imit_error = jp.sum(jp.abs(lin_vel - info["command"][:3]))
+      return jp.exp(-lin_imit_error / self._config.reward_config.tracking_sigma)
+
+  def _reward_imitation_ang_vel(self, ang_vel: jax.Array, info: dict) -> jax.Array:
+      """
+      Reward for matching angular velocity to imitation reference.
+      """
+      ang_imit_error = jp.square(ang_vel[2] - info["command"][2])
+      return jp.exp(-ang_imit_error / self._config.reward_config.tracking_sigma)
+
+  def _reward_imitation_height(self, data: mjx.Data) -> jax.Array:
+      """
+      Reward for matching base height to imitation reference.
+      """
+      # Assuming reference height is provided in the imitation model output
+      # You may need to adjust this based on how your imitation model provides height
+      base_height = data.qpos[2]  # Z-position of the base
+      height_error = jp.square(base_height)  # Minimize deviation from reference height
+      return jp.exp(-height_error / self._config.reward_config.tracking_sigma)
