@@ -123,7 +123,7 @@ class Joystick(go2_base.Go2Env):
 
 
   def _compute_targets(self, actions_scaled, dof_imit_arr):
-    position_targets = actions_scaled + self._default_pose + self._config.gamma**(self.torque_ref_decay_factor/self._config.k_decap) * (dof_imit_arr - self._default_pose)
+    position_targets = actions_scaled + self._default_pose + self._config.gamma**(self.torque_ref_decay_factor/self._config.k_decap) * (dof_imit_arr + self._default_pose)
 
     return jp.clip(position_targets, a_min=self._soft_lowers, a_max=self._soft_uppers)
 
