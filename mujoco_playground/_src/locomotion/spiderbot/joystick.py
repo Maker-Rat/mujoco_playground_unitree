@@ -63,6 +63,7 @@ def default_config() -> config_dict.ConfigDict:
               ang_vel_xy=-0.035,  # Change from -0.025
               orientation=-4.0,  # Change from -2.5
               # Other
+              action_smoothness=-0.005,
               dof_pos_limits=-0.85,  # Change from -0.5
               pose=0.1,  # Change from 0.05
               # Other
