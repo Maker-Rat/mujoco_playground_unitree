@@ -22,6 +22,7 @@ from ml_collections import config_dict
 from mujoco import mjx
 
 from mujoco_playground._src import mjx_env
+from mujoco_playground._src.locomotion.apollo import joystick as apollo_joystick
 from mujoco_playground._src.locomotion.barkour import joystick as barkour_joystick
 from mujoco_playground._src.locomotion.berkeley_humanoid import joystick as berkeley_humanoid_joystick
 from mujoco_playground._src.locomotion.berkeley_humanoid import randomize as berkeley_humanoid_randomize
@@ -45,7 +46,11 @@ from mujoco_playground._src.locomotion.spot import joystick_gait_tracking as spo
 from mujoco_playground._src.locomotion.t1 import joystick as t1_joystick
 from mujoco_playground._src.locomotion.t1 import randomize as t1_randomize
 
+
 _envs = {
+    "ApolloJoystickFlatTerrain": functools.partial(
+        apollo_joystick.Joystick, task="flat_terrain"
+    ),
     "BarkourJoystick": barkour_joystick.Joystick,
     "BerkeleyHumanoidJoystickFlatTerrain": functools.partial(
         berkeley_humanoid_joystick.Joystick, task="flat_terrain"
@@ -102,6 +107,7 @@ _envs = {
 }
 
 _cfgs = {
+    "ApolloJoystickFlatTerrain": apollo_joystick.default_config,
     "BarkourJoystick": barkour_joystick.default_config,
     "BerkeleyHumanoidJoystickFlatTerrain": (
         berkeley_humanoid_joystick.default_config
@@ -200,8 +206,11 @@ def load(
   Returns:
       An instance of the environment.
   """
+  mjx_env.ensure_menagerie_exists()  # Ensure menagerie exists when environment is loaded.
   if env_name not in _envs:
-    raise ValueError(f"Env '{env_name}' not found. Available envs: {_cfgs.keys()}")
+    raise ValueError(
+        f"Env '{env_name}' not found. Available envs: {_cfgs.keys()}"
+    )
   config = config or get_default_config(env_name)
   return _envs[env_name](config=config, config_overrides=config_overrides)
 

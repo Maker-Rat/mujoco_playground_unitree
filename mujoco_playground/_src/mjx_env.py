@@ -18,6 +18,7 @@ import abc
 import subprocess
 import sys
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+import warnings
 
 from etils import epath
 from flax import struct
@@ -108,9 +109,6 @@ def ensure_menagerie_exists() -> None:
       raise
 
 
-ensure_menagerie_exists()  # Ensure menagerie exists when module is imported.
-
-
 Observation = Union[jax.Array, Mapping[str, jax.Array]]
 ObservationSize = Union[int, Mapping[str, Union[Tuple[int, ...], int]]]
 
@@ -128,17 +126,23 @@ def update_assets(
       update_assets(assets, f, glob, recursive)
 
 
-def init(
-    model: mjx.Model,
+def make_data(
+    model: mujoco.MjModel,
     qpos: Optional[jax.Array] = None,
     qvel: Optional[jax.Array] = None,
     ctrl: Optional[jax.Array] = None,
     act: Optional[jax.Array] = None,
     mocap_pos: Optional[jax.Array] = None,
     mocap_quat: Optional[jax.Array] = None,
+    impl: Optional[str] = None,
+    nconmax: Optional[int] = None,
+    njmax: Optional[int] = None,
+    device: Optional[jax.Device] = None,
 ) -> mjx.Data:
   """Initialize MJX Data."""
-  data = mjx.make_data(model)
+  data = mjx.make_data(
+      model, impl=impl, nconmax=nconmax, njmax=njmax, device=device
+  )
   if qpos is not None:
     data = data.replace(qpos=qpos)
   if qvel is not None:
@@ -151,7 +155,6 @@ def init(
     data = data.replace(mocap_pos=mocap_pos.reshape(model.nmocap, -1))
   if mocap_quat is not None:
     data = data.replace(mocap_quat=mocap_quat.reshape(model.nmocap, -1))
-  data = mjx.forward(model, data)
   return data
 
 
@@ -276,6 +279,16 @@ class MjxEnv(abc.ABC):
       return jax.tree_util.tree_map(lambda x: x.shape, obs)
     return obs.shape[-1]
 
+  @property
+  def model_assets(self) -> Dict[str, Any]:
+    """Dictionary of model assets to use with MjModel.from_xml_path."""
+    if hasattr(self, "_model_assets"):
+      return self._model_assets
+    raise NotImplementedError(
+        "_model_assets not defined for this environment"
+        "see cartpole.py for an example."
+    )
+
   def render(
       self,
       trajectory: List[State],
@@ -316,7 +329,7 @@ def render_array(
 ):
   """Renders a trajectory as an array of images."""
   renderer = mujoco.Renderer(mj_model, height=height, width=width)
-  camera = camera or -1
+  camera = camera if camera is not None else -1
 
   if hfield_data is not None:
     mj_model.hfield_data = hfield_data.reshape(mj_model.hfield_data.shape)
@@ -379,7 +392,7 @@ def get_qpos_ids(
   for jnt_name in joint_names:
     jnt = model.joint(jnt_name).id
     jnt_type = model.jnt_type[jnt]
-    qadr = model.jnt_dofadr[jnt]
+    qadr = model.jnt_qposadr[jnt]
     qdim = qpos_width(jnt_type)
     index_list.extend(range(qadr, qadr + qdim))
   return np.array(index_list)

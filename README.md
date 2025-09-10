@@ -8,12 +8,15 @@ A comprehensive suite of GPU-accelerated environments for robot learning researc
 
 Features include:
 
-- Classic control environments from `dm_control` reimplemented in MJX.
+- Classic control environments from `dm_control`.
 - Quadruped and bipedal locomotion environments.
 - Non-prehensile and dexterous manipulation environments.
 - Vision-based support available via [Madrona-MJX](https://github.com/shacklettbp/madrona_mjx).
 
 For more details, check out the project [website](https://playground.mujoco.org/).
+
+> [!NOTE]
+> We now support training with both the MuJoCo MJX JAX implementation, as well as the [MuJoCo Warp](https://github.com/google-deepmind/mujoco_warp) implementation at HEAD. See MuJoCo 3.3.5 [release notes](https://mujoco.readthedocs.io/en/stable/changelog.html#version-3-3-5-august-8-2025) under `MJX` for more details.
 
 ## Installation
 
@@ -22,6 +25,14 @@ You can install MuJoCo Playground directly from PyPI:
 ```sh
 pip install playground
 ```
+
+> [!WARNING]
+> The `playground` release may depend on pre-release versions of `mujoco` and
+> `warp-lang`, in which case you can try `pip install playground
+> --extra-index-url=https://py.mujoco.org
+> --extra-index-url=https://pypi.nvidia.com/warp-lang/`.
+> If there are still version mismatches, please open a github issue, and install
+> from source.
 
 ### From Source
 
@@ -63,9 +74,36 @@ For vision-based environments, please refer to the installation instructions in 
 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/google-deepmind/mujoco_playground/blob/main/learning/notebooks/training_vision_1.ipynb) | Training CartPole from Vision |
 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/google-deepmind/mujoco_playground/blob/main/learning/notebooks/training_vision_2.ipynb) | Robotic Manipulation from Vision |
 
-## How can I contribute?
+## Running from CLI
+> [!IMPORTANT]
+> Assumes installation from source.
+
+For basic usage, navigate to the repo's directory and run:
+```bash
+python learning/train_jax_ppo.py --env_name CartpoleBalance
+```
+
+### Training Visualization
+
+To interactively view trajectories throughout training with [rscope](https://github.com/Andrew-Luo1/rscope/tree/main), install it (`pip install rscope`) and run:
+
+```
+python learning/train_jax_ppo.py --env_name PandaPickCube --rscope_envs 16 --run_evals=False --deterministic_rscope=True
+# In a separate terminal
+python -m rscope
+```
+
+## FAQ
+
+### How can I contribute?
 
 Get started by installing the library and exploring its features! Found a bug? Report it in the issue tracker. Interested in contributing? If you are a developer with robotics experience, we would love your help—check out the [contribution guidelines](CONTRIBUTING.md) for more details.
+
+### Reproducibility / GPU Precision Issues
+
+Users with NVIDIA Ampere architecture GPUs (e.g., RTX 30 and 40 series) may experience reproducibility [issues](https://github.com/google-deepmind/mujoco_playground/issues/86) in mujoco_playground due to JAX’s default use of TF32 for matrix multiplications. This lower precision can adversely affect RL training stability. To ensure consistent behavior with systems using full float32 precision (as on Turing GPUs), please run `export JAX_DEFAULT_MATMUL_PRECISION=highest` in your terminal before starting your experiments (or add it to the end of `~/.bashrc`).
+
+To reproduce results using the same exact learning script as used in the paper, run the brax training script which is available [here](https://github.com/google/brax/blob/1ed3be220c9fdc9ef17c5cf80b1fa6ddc4fb34fa/brax/training/learner.py#L1). There are slight differences in results when using the `learning/train_jax_ppo.py` script, see the issue [here](https://github.com/google-deepmind/mujoco_playground/issues/171) for more context.
 
 ## Citation
 
