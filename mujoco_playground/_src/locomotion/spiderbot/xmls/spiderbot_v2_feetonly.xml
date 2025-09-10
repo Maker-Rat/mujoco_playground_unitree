@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mujoco model="Spiderbot_V2">
+<mujoco model="spiderbot_v2">
   <compiler angle="radian" meshdir="./assets"/>
 
   <option gravity="0 0 -9.81" timestep="0.004">

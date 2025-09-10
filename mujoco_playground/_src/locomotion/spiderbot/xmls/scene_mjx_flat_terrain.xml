@@ -1,6 +1,6 @@
 <mujoco model="spiderbot flat terrain scene">
-  <!-- Include the Go2 model file -->
-  <include file="Spiderbot_V2_full_position.xml"/>
+  <!-- Include the Spiderbot model file -->
+  <include file="spiderbot_v2_feetonly.xml"/>
 
   <statistic center="0 0 0.1" extent="0.8" meansize="0.04"/>
 

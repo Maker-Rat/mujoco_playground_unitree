@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Joystick task for Hexapod."""
+"""Stairs task for Hexapod."""
 
 from typing import Any, Dict, Optional, Union
 
@@ -28,82 +28,45 @@ from mujoco_playground._src import collision
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.locomotion.spiderbot import base as spiderbot_base
 from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as consts
+from mujoco_playground._src.locomotion.spiderbot import joystick as spiderbot_joystick
 
 
-
+# Updated reward configuration
 def default_config() -> config_dict.ConfigDict:
-  return config_dict.create(
-      ctrl_dt=0.04,
-      sim_dt=0.004,
-      episode_length=1000,
-      Kp=35.0,
-      Kd=0.5,
-      action_repeat=1,
-      action_scale=0.35,
-      history_len=1,
-      soft_joint_pos_limit_factor=0.95,
-      noise_config=config_dict.create(
-          level=1.0,  # Set to 0.0 to disable noise.
-          scales=config_dict.create(
-              joint_pos=0.03,
-              joint_vel=1.5,
-              gyro=0.2,
-              gravity=0.05,
-              linvel=0.1,
-          ),
-      ),
-
-      reward_config=config_dict.create(
-          scales=config_dict.create(
-              # Tracking - your current values are too high
-              tracking_lin_vel=1.25,  # Change from 1.5
-              tracking_ang_vel=0.75,  # Change from 1.0
-              # Base reward - your values need adjustment
-              lin_vel_z=-0.65,  # Change from -0.75
-              ang_vel_xy=-0.035,  # Change from -0.025
-              orientation=-4.0,  # Change from -2.5
-              # Other
-              dof_pos_limits=-0.85,  # Change from -0.5
-              pose=0.1,  # Change from 0.05
-              # Other
-              termination=-1.0,
-              stand_still=-1.0,  # Change from -0.25
-              # Regularization
-              torques=-0.0002,
-              action_rate=-0.01,
-              energy=-0.001,  # ADD THIS
-              # Feet - ADD ALL OF THESE
-              feet_clearance=-2.0,
-              feet_height=-0.2,
-              feet_slip=-0.1,
-              feet_air_time=0.1,
-          ),
-          tracking_sigma=0.25,
-          max_foot_height=0.1,  # Change from 0.15 for hexapod
-          action_smoothness=-0.005,
-      ),
-
-      pert_config=config_dict.create(
-          enable=False,
-          velocity_kick=[0.0, 3.0],
-          kick_durations=[0.05, 0.2],
-          kick_wait_times=[1.0, 3.0],
-      ),
-      command_config=config_dict.create(
-          # Uniform distribution for command amplitude.
-          a=[1.0, 0.6, 0.8],  # Adjusted for spiderbot stability
-          # Probability of not zeroing out new command.
-          b=[0.9, 0.25, 0.5],
-      ),
-  )
+    config = spiderbot_joystick.default_config()
+    
+    config.reward_config.scales.update({
+        # Constrained progress rewards
+        "forward_progress": 0.8,
+        "height_progress": 1.2,
+        "stair_alignment": 2.0,  # Increased importance
+        
+        # Anti-exploit penalties
+        "boundary_violation": -5.0,  # Heavy penalty for leaving stair area
+        "y_deviation": -1.0,  # Penalty for drifting sideways
+        
+        # Stability and control
+        "body_stability": 1.5,
+        "foot_placement": 0.5,
+        
+        # Basic locomotion (keep low)
+        "tracking_lin_vel": 0.1,
+        "orientation": -2.0,
+        "pose": 0.3,
+        
+        # Standard penalties
+        "termination": -1.0,
+        "torques": -0.0002,
+        "action_rate": -0.02,
+    })
+    
+    return config
 
 
-class Joystick(spiderbot_base.SpiderbotEnv):
-  """Track a joystick command for spiderbot."""
-
+class StairsClimbing(spiderbot_base.SpiderbotEnv): 
   def __init__(
       self,
-      task: str = "flat_terrain",
+      task: str = "stairs",
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
   ):
@@ -164,7 +127,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     # x=+U(-0.5, 0.5), y=+U(-0.5, 0.5), yaw=U(-3.14, 3.14).
     rng, key = jax.random.split(rng)
-    dxy = jax.random.uniform(key, (2,), minval=-0.5, maxval=0.5)
+    dxy = jax.random.uniform(key, (2,), minval=-0.2, maxval=0.2)
     qpos = qpos.at[0:2].set(qpos[0:2] + dxy)
     rng, key = jax.random.split(rng)
     yaw = jax.random.uniform(key, (1,), minval=-3.14, maxval=3.14)
@@ -203,18 +166,13 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         maxval=self._config.pert_config.velocity_kick[1],
     )
 
-    rng, key1, key2 = jax.random.split(rng, 3)
+    rng, key1 = jax.random.split(rng, 2)
     time_until_next_cmd = jax.random.exponential(key1) * 5.0
-    steps_until_next_cmd = jp.round(time_until_next_cmd / self.dt).astype(
-        jp.int32
-    )
-    cmd = jax.random.uniform(
-        key2, shape=(3,), minval=-self._cmd_a, maxval=self._cmd_a
-    )
+    steps_until_next_cmd = jp.round(time_until_next_cmd / self.dt).astype(jp.int32)
 
     info = {
         "rng": rng,
-        "command": cmd,
+         "command": jp.array([0.2, 0.0, 0.0]),
         "steps_until_next_cmd": steps_until_next_cmd,
         "last_act": jp.zeros(self.mjx_model.nu),
         "last_last_act": jp.zeros(self.mjx_model.nu),
@@ -237,6 +195,11 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     obs = self._get_obs(data, info)
     reward, done = jp.zeros(2)
+
+    state = mjx_env.State(data, obs, reward, done, metrics, info)
+    
+    # Set constant climbing command
+    state.info["command"] = jp.array([0.2, 0.0, 0.0])
  
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
@@ -262,17 +225,16 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     obs = self._get_obs(data, state.info)
     done = self._get_termination(data)
 
-    # print("Tstep:", self.tstep)
-
     rewards = self._get_reward(
         data, action, state.info, state.metrics, done, first_contact, contact
     )
 
     rewards = {
-        k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
+        k: jp.clip(v * self._config.reward_config.scales[k], -10.0, 10.0) 
+        for k, v in rewards.items()
     }
     
-    reward = jp.clip(sum(rewards.values()) * self.dt, 0.0, 10000.0)
+    reward = jp.clip(sum(rewards.values()) * self.dt, -5.0, 5.0)
     
     # And add an explicit print right before returning
     # debug.print("Final reward being returned: {}", reward)
@@ -303,10 +265,20 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     return state
 
+    # Enhanced termination to prevent infinite episodes
   def _get_termination(self, data: mjx.Data) -> jax.Array:
-    # debug.print("Self.upvector: {}", self.get_upvector(data)[-1])
-    fall_termination = self.get_upvector(data)[-1] < -0.1
-    return fall_termination
+        # Fall termination
+        fall_termination = self.get_upvector(data)[-1] < -0.1
+        
+        # Boundary termination - robot went too far off course
+        x_pos = data.qpos[0]
+        y_pos = data.qpos[1]
+        boundary_termination = (jp.abs(y_pos) > 2.0) | (x_pos < -2.0)
+        
+        # Optional: Success termination when reaching top
+        # success_termination = data.qpos[2] > 1.5  # Adjust based on stair height
+        
+        return fall_termination | boundary_termination
 
   def _get_obs(
       self, data: mjx.Data, info: dict[str, Any]
@@ -392,176 +364,117 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         "privileged_state": privileged_state,
     }
 
-  def _get_reward(
-    self,
-    data: mjx.Data,
-    action: jax.Array,
-    info: dict[str, Any],
-    metrics: dict[str, Any],
-    done: jax.Array,
-    first_contact: jax.Array,
-    contact: jax.Array,
-) -> dict[str, jax.Array]:
-    del metrics  # Unused.
+  def _get_reward(self, data, action, info, metrics, done, first_contact, contact):
     return {
-        "tracking_lin_vel": self._reward_tracking_lin_vel(
-            info["command"], self.get_local_linvel(data)
-        ),
-        "tracking_ang_vel": self._reward_tracking_ang_vel(
-            info["command"], self.get_gyro(data)
-        ),
-        "lin_vel_z": self._cost_lin_vel_z(self.get_global_linvel(data)),
-        "ang_vel_xy": self._cost_ang_vel_xy(self.get_global_angvel(data)),
+        # Constrained progress rewards
+        "forward_progress": self._reward_forward_progress(data, info),
+        "stair_alignment": self._reward_stair_alignment(data),
+        
+        # Anti-exploit penalties
+        "y_deviation": self._cost_y_deviation(data),
+        
+        # Stability rewards
+        "body_stability": self._reward_body_stability(data),
+        "foot_placement": self._reward_foot_placement(data, contact),
+        
+        # Basic locomotion (reduced)
+        "tracking_lin_vel": self._reward_tracking_lin_vel(info["command"], self.get_local_linvel(data)),
         "orientation": self._cost_orientation(self.get_upvector(data)),
-        "stand_still": self._cost_stand_still(info["command"], self._actuator_joint_angles(data.qpos)),
-        "termination": self._cost_termination(done),
         "pose": self._reward_pose(self._actuator_joint_angles(data.qpos)),
+        
+        # Standard penalties  
+        "termination": self._cost_termination(done),
         "torques": self._cost_torques(data.actuator_force),
-        "action_rate": self._cost_action_rate(
-            action, info["last_act"], info["last_last_act"]),
-        "energy": self._cost_energy(self._actuator_joint_vels(data.qvel[6:]), data.actuator_force),  # ADD THIS
-        "feet_slip": self._cost_feet_slip(data, contact, info),  # ADD THIS
-        "feet_clearance": self._cost_feet_clearance(data),  # ADD THIS
-        "feet_height": self._cost_feet_height(info["swing_peak"], first_contact, info),  # ADD THIS
-        "feet_air_time": self._reward_feet_air_time(info["feet_air_time"], first_contact, info["command"]),  # ADD THIS
-        "dof_pos_limits": self._cost_joint_pos_limits(self._actuator_joint_angles(data.qpos)),
-        "action_smoothness": self._cost_action_smoothness(action, info["last_act"], info["last_last_act"]),
+        "action_rate": self._cost_action_rate(action, info["last_act"], info["last_last_act"]),
     }
 
   # Tracking rewards.
 
-  def _reward_tracking_lin_vel(
-      self,
-      commands: jax.Array,
-      local_vel: jax.Array,
-  ) -> jax.Array:
-    # Tracking of linear velocity commands (xy axes).
-    # debug.print("Linear Velocity : {}", local_vel)
-    lin_vel_error = jp.sum(jp.square(commands[:2] - local_vel[:2]))
-    return jp.exp(-lin_vel_error / self._config.reward_config.tracking_sigma)
-
-  def _reward_tracking_ang_vel(
-      self,
-      commands: jax.Array,
-      ang_vel: jax.Array,
-  ) -> jax.Array:
-    # Tracking of angular velocity commands (yaw).
-    ang_vel_error = jp.square(commands[2] - ang_vel[2])
-    return jp.exp(-ang_vel_error / self._config.reward_config.tracking_sigma)
-
-  # Base-related rewards.
-
-  def _cost_lin_vel_z(self, global_linvel) -> jax.Array:
-    # Penalize z axis base linear velocity.
-    return jp.square(global_linvel[2])
-
-  def _cost_ang_vel_xy(self, global_angvel) -> jax.Array:
-    # Penalize xy axes base angular velocity.
-    return jp.sum(jp.square(global_angvel[:2]))
+  def _reward_tracking_lin_vel(self, commands: jax.Array, local_vel: jax.Array) -> jax.Array:
+        """Tracking of linear velocity commands (xy axes)."""
+        lin_vel_error = jp.sum(jp.square(commands[:2] - local_vel[:2]))
+        return jp.exp(-lin_vel_error / self._config.reward_config.tracking_sigma)
 
   def _cost_orientation(self, torso_zaxis: jax.Array) -> jax.Array:
-    # Penalize non flat base orientation
-    return jp.sum(jp.square(torso_zaxis[:2]))
-
-  # Energy related rewards.
-
-  def _cost_torques(self, torques: jax.Array) -> jax.Array:
-    # Penalize torques.
-    return jp.sqrt(jp.sum(jp.square(torques))) + jp.sum(jp.abs(torques))
-
-  def _cost_energy(
-      self, qvel: jax.Array, qfrc_actuator: jax.Array
-  ) -> jax.Array:
-    # Penalize energy consumption.
-    return jp.sum(jp.abs(qvel) * jp.abs(qfrc_actuator))
-
-  def _cost_action_rate(
-      self, act: jax.Array, last_act: jax.Array, last_last_act: jax.Array
-  ) -> jax.Array:
-    del last_last_act  # Unused.
-    return jp.sum(jp.square(act - last_act))
-
-  # Other rewards.
+        """Penalize non flat base orientation"""
+        return jp.sum(jp.square(torso_zaxis[:2]))
 
   def _reward_pose(self, qpos: jax.Array) -> jax.Array:
-    # Stay close to the default pose.
-    # Modified weight array to handle 12 joints (2 per leg x 6 legs)
-    # Format: [coxa, femur] x 6 legs
-    weight = jp.array([1.0, 1.0] * 6)
-    return jp.exp(-jp.sum(jp.square(qpos - self._default_pose) * weight))
-
-  def _cost_stand_still(
-      self,
-      commands: jax.Array,
-      qpos: jax.Array,
-  ) -> jax.Array:
-    cmd_norm = jp.linalg.norm(commands)
-    return jp.sum(jp.abs(qpos - self._default_pose)) * (cmd_norm < 0.01)
+        """Stay close to the default pose."""
+        weight = jp.array([1.0, 1.0] * 6)  # 12 joints for hexapod
+        return jp.exp(-jp.sum(jp.square(qpos - self._default_pose) * weight))
 
   def _cost_termination(self, done: jax.Array) -> jax.Array:
-    # Penalize early termination.
-    return done
+        """Penalize early termination."""
+        return done
 
-  def _cost_joint_pos_limits(self, qpos: jax.Array) -> jax.Array:
-    # Penalize joints if they cross soft limits.
-    out_of_limits = -jp.clip(qpos - self._soft_lowers, None, 0.0)
-    out_of_limits += jp.clip(qpos - self._soft_uppers, 0.0, None)
-    return jp.sum(out_of_limits)
+  def _cost_torques(self, torques: jax.Array) -> jax.Array:
+        """Penalize torques."""
+        return jp.sqrt(jp.sum(jp.square(torques))) + jp.sum(jp.abs(torques))
+
+  def _cost_action_rate(self, act: jax.Array, last_act: jax.Array, last_last_act: jax.Array) -> jax.Array:
+        """Penalize action rate changes."""
+        del last_last_act  # Unused
+        return jp.sum(jp.square(act - last_act))
+
+  def _reward_forward_progress(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
+    """Reward forward velocity only when at reasonable height."""
+    forward_vel = self.get_local_linvel(data)[0]
+    current_height = data.qpos[2]
+    
+    # Only reward forward motion when robot is on/near stairs
+    # Assumes stairs start at some Y position and extend upward
+    min_climbing_height = 0.15  # Above flat ground level
+    height_factor = jp.where(current_height > min_climbing_height, 1.0, 0.1)
+    
+    return jp.clip(forward_vel * height_factor * 2.0, 0.0, 5.0)
+
+  def _reward_stair_alignment(self, data: mjx.Data) -> jax.Array:
+        """Reward staying aligned with stairs (not drifting in Y)."""
+        y_pos = data.qpos[1]
+        return jp.exp(-jp.square(y_pos) / 0.25)  # Penalize Y deviation
+
+  def _reward_body_stability(self, data: mjx.Data) -> jax.Array:
+        """Reward stable body orientation for climbing."""
+        pitch = jp.arcsin(2 * (data.qpos[6]*data.qpos[4] - data.qpos[3]*data.qpos[5]))
+        roll = jp.arcsin(2 * (data.qpos[6]*data.qpos[5] + data.qpos[3]*data.qpos[4]))
+        
+        # Slight forward pitch is good for climbing
+        ideal_pitch = 0.1  # ~6 degrees forward lean
+        pitch_error = jp.square(pitch - ideal_pitch)
+        roll_error = jp.square(roll)
+        
+        return jp.exp(-(pitch_error + roll_error) / 0.1)
+
+  def _reward_foot_placement(self, data: mjx.Data, contact: jax.Array) -> jax.Array:
+        """Reward good foot placement on steps."""
+        foot_positions = data.site_xpos[self._feet_site_id]
+        
+        # Reward feet being at different heights (climbing motion)
+        foot_heights = foot_positions[..., 2]
+        height_variance = jp.var(foot_heights)
+        
+        # Reward contact when climbing
+        contact_reward = jp.sum(contact) * 0.1
+        
+        return height_variance + contact_reward
+
+  def _cost_backward_motion(self, data: mjx.Data) -> jax.Array:
+        """Penalize moving backward."""
+        x_vel = self.get_local_linvel(data)[0]
+        return jp.clip(-x_vel * 5.0, 0.0, 10.0)
+
+  def _cost_excessive_pitch(self, data: mjx.Data) -> jax.Array:
+        """Penalize excessive forward/backward tilt."""
+        pitch = jp.arcsin(2 * (data.qpos[6]*data.qpos[4] - data.qpos[3]*data.qpos[5]))
+        return jp.square(jp.clip(jp.abs(pitch) - 0.3, 0.0, None))  # Allow some tilt
   
+  def _cost_y_deviation(self, data: mjx.Data) -> jax.Array:
+        """Penalize deviation from stair centerline."""
+        y_pos = data.qpos[1]
+        return jp.square(y_pos)  # Quadratic penalty for Y deviation
 
-  def _cost_action_smoothness(
-      self, act: jax.Array, last_act: jax.Array, last_last_act: jax.Array
-  ) -> jax.Array:
-      # Penalize rapid changes in action derivatives (jerk)
-      action_accel = act - 2*last_act + last_last_act
-      return jp.sum(jp.square(action_accel))
-
-  # Feet related rewards.
-
-  def _cost_energy(
-      self, qvel: jax.Array, qfrc_actuator: jax.Array
-  ) -> jax.Array:
-      # Penalize energy consumption.
-      return jp.sum(jp.abs(qvel) * jp.abs(qfrc_actuator))
-
-  def _cost_feet_slip(
-      self, data: mjx.Data, contact: jax.Array, info: dict[str, Any]
-  ) -> jax.Array:
-      cmd_norm = jp.linalg.norm(info["command"])
-      feet_vel = data.sensordata[self._foot_linvel_sensor_adr]
-      vel_xy = feet_vel[..., :2]
-      vel_xy_norm_sq = jp.sum(jp.square(vel_xy), axis=-1)
-      return jp.sum(vel_xy_norm_sq * contact) * (cmd_norm > 0.01)
-
-  def _cost_feet_clearance(self, data: mjx.Data) -> jax.Array:
-      feet_vel = data.sensordata[self._foot_linvel_sensor_adr]
-      vel_xy = feet_vel[..., :2]
-      vel_norm = jp.sqrt(jp.linalg.norm(vel_xy, axis=-1))
-      foot_pos = data.site_xpos[self._feet_site_id]
-      foot_z = foot_pos[..., -1]
-      delta = jp.abs(foot_z - self._config.reward_config.max_foot_height)
-      return jp.sum(delta * vel_norm)
-
-  def _cost_feet_height(
-      self,
-      swing_peak: jax.Array,
-      first_contact: jax.Array,
-      info: dict[str, Any],
-  ) -> jax.Array:
-      cmd_norm = jp.linalg.norm(info["command"])
-      error = swing_peak / self._config.reward_config.max_foot_height - 1.0
-      return jp.sum(jp.square(error) * first_contact) * (cmd_norm > 0.01)
-
-  def _reward_feet_air_time(
-      self, air_time: jax.Array, first_contact: jax.Array, commands: jax.Array
-  ) -> jax.Array:
-      # Reward air time.
-      cmd_norm = jp.linalg.norm(commands)
-      rew_air_time = jp.sum((air_time - 0.1) * first_contact)
-      rew_air_time *= cmd_norm > 0.01  # No reward for zero commands.
-      return rew_air_time
-
-  # Perturbation and command sampling.
+    # Perturbation and command sampling.
 
   def _maybe_apply_perturbation(self, state: mjx_env.State) -> mjx_env.State:
     def gen_dir(rng: jax.Array) -> jax.Array:
@@ -620,11 +533,5 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     )
 
   def sample_command(self, rng: jax.Array, x_k: jax.Array) -> jax.Array:
-    rng, y_rng, w_rng, z_rng = jax.random.split(rng, 4)
-    y_k = jax.random.uniform(
-        y_rng, shape=(3,), minval=-self._cmd_a, maxval=self._cmd_a
-    )
-    z_k = jax.random.bernoulli(z_rng, self._cmd_b, shape=(3,))
-    w_k = jax.random.bernoulli(w_rng, 0.5, shape=(3,))
-    x_kp1 = x_k - w_k * (x_k - y_k * z_k)
-    return x_kp1
+    """Override to always command forward motion for climbing."""
+    return jp.array([0.2, 0.0, 0.0])  # Constant forward command
