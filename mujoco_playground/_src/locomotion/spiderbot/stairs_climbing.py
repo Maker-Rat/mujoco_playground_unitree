@@ -34,20 +34,20 @@ from mujoco_playground._src.locomotion.spiderbot import joystick as spiderbot_jo
 def default_config() -> config_dict.ConfigDict:
     config = spiderbot_joystick.default_config()
     
-    config.reward_config.scales = config_dict.create({
+    config.reward_config.scales.update({
         # Basic progress rewards
         "forward_progress": 1.5,
         "y_deviation": -0.5,  # Penalty for drifting sideways (single form)
         
-        # Basic locomotion
-        "tracking_lin_vel": 0.75,
-        "orientation": -0.5,
-        "pose": 0.025,
+        # # Basic locomotion
+        # "tracking_lin_vel": 0.75,
+        # "orientation": -0.5,
+        # "pose": 0.025,
         
-        # Standard penalties
-        "termination": -1.0,
-        "torques": -0.0002,
-        "action_rate": -0.02,
+        # # Standard penalties
+        # "termination": -1.0,
+        # "torques": -0.0002,
+        # "action_rate": -0.02,
     })
     
     return config
