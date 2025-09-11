@@ -39,7 +39,7 @@ def default_config() -> config_dict.ConfigDict:
       Kp=35.0,
       Kd=0.5,
       action_repeat=1,
-      action_scale=0.35,
+      action_scale=0.5,
       history_len=1,
       soft_joint_pos_limit_factor=0.95,
       noise_config=config_dict.create(
@@ -56,32 +56,32 @@ def default_config() -> config_dict.ConfigDict:
       reward_config=config_dict.create(
           scales=config_dict.create(
               # Tracking - your current values are too high
-              tracking_lin_vel=1.25,  # Change from 1.5
-              tracking_ang_vel=0.75,  # Change from 1.0
+              tracking_lin_vel=2,  # Change from 1.5
+              tracking_ang_vel=1.5,  # Change from 1.0
               # Base reward - your values need adjustment
-              lin_vel_z=-0.65,  # Change from -0.75
-              ang_vel_xy=-0.035,  # Change from -0.025
-              orientation=-4.0,  # Change from -2.5
+              lin_vel_z=-0.15,  # Change from -0.75
+              ang_vel_xy=-0.005,  # Change from -0.025
+              orientation=-0.5,  # Change from -2.5
               # Other
-              action_smoothness=-0.005,
-              dof_pos_limits=-0.85,  # Change from -0.5
-              pose=0.1,  # Change from 0.05
+              action_smoothness=-0.01,
+              dof_pos_limits=-0.5,  # Change from -0.5
+              pose=0.02,  # Change from 0.05
               # Other
               termination=-1.0,
-              stand_still=-1.0,  # Change from -0.25
+              stand_still=-0.5,  # Change from -0.25
               # Regularization
-              torques=-0.0002,
+              torques=-0.0,
               action_rate=-0.01,
-              energy=-0.001,  # ADD THIS
+              energy=-0.000,  # ADD THIS
               # Feet - ADD ALL OF THESE
-              feet_clearance=-2.0,
-              feet_height=-0.2,
-              feet_slip=-0.1,
-              feet_air_time=0.1,
+              feet_clearance=0.0,
+              feet_height=0.0,
+              feet_slip=0.0,
+              feet_air_time=0.0,
           ),
           tracking_sigma=0.25,
-          max_foot_height=0.1,  # Change from 0.15 for hexapod
-          action_smoothness=-0.005,
+          max_foot_height=0.125,  # Change from 0.15 for hexapod
+          action_smoothness=-0.0035,
       ),
 
       pert_config=config_dict.create(
@@ -294,7 +294,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
     
-    reward = jp.clip(sum(rewards.values()) * self.dt, 0.0, 10000.0)
+    reward = jp.clip(sum(rewards.values()) * self.dt, 0.0, 10.0)
     
     # And add an explicit print right before returning
     # debug.print("Final reward being returned: {}", reward)
@@ -539,13 +539,6 @@ class Joystick(spiderbot_base.SpiderbotEnv):
       return jp.sum(jp.square(action_accel))
 
   # Feet related rewards.
-
-  def _cost_energy(
-      self, qvel: jax.Array, qfrc_actuator: jax.Array
-  ) -> jax.Array:
-      # Penalize energy consumption.
-      return jp.sum(jp.abs(qvel) * jp.abs(qfrc_actuator))
-
   def _cost_feet_slip(
       self, data: mjx.Data, contact: jax.Array, info: dict[str, Any]
   ) -> jax.Array:

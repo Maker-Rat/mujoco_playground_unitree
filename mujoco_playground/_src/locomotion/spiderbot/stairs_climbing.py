@@ -34,24 +34,15 @@ from mujoco_playground._src.locomotion.spiderbot import joystick as spiderbot_jo
 def default_config() -> config_dict.ConfigDict:
     config = spiderbot_joystick.default_config()
     
-    config.reward_config.scales.update({
-        # Constrained progress rewards
-        "forward_progress": 0.8,
-        "height_progress": 1.2,
-        "stair_alignment": 2.0,  # Increased importance
+    config.reward_config.scales = config_dict.create({
+        # Basic progress rewards
+        "forward_progress": 1.5,
+        "y_deviation": -0.5,  # Penalty for drifting sideways (single form)
         
-        # Anti-exploit penalties
-        "boundary_violation": -5.0,  # Heavy penalty for leaving stair area
-        "y_deviation": -1.0,  # Penalty for drifting sideways
-        
-        # Stability and control
-        "body_stability": 1.5,
-        "foot_placement": 0.5,
-        
-        # Basic locomotion (keep low)
-        "tracking_lin_vel": 0.1,
-        "orientation": -2.0,
-        "pose": 0.3,
+        # Basic locomotion
+        "tracking_lin_vel": 0.75,
+        "orientation": -0.5,
+        "pose": 0.025,
         
         # Standard penalties
         "termination": -1.0,
@@ -389,35 +380,28 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
     }
 
   def _get_reward(self, data, action, info, metrics, done, first_contact, contact):
-    return {
-        # Constrained progress rewards
+    # Compute basic rewards only, with NaN protection
+    rewards = {
         "forward_progress": self._reward_forward_progress(data, info),
-        "stair_alignment": self._reward_stair_alignment(data),
-        
-        # Anti-exploit penalties
         "y_deviation": self._cost_y_deviation(data),
-        
-        # Stability rewards
-        "body_stability": self._reward_body_stability(data),
-        "foot_placement": self._reward_foot_placement(data, contact),
-        
-        # Basic locomotion (reduced)
         "tracking_lin_vel": self._reward_tracking_lin_vel(info["command"], self.get_local_linvel(data)),
         "orientation": self._cost_orientation(self.get_upvector(data)),
         "pose": self._reward_pose(self._actuator_joint_angles(data.qpos)),
-        
-        # Standard penalties  
         "termination": self._cost_termination(done),
         "torques": self._cost_torques(data.actuator_force),
         "action_rate": self._cost_action_rate(action, info["last_act"], info["last_last_act"]),
     }
+    
+    # Clip each reward to avoid extreme values and NaNs
+    rewards = {k: jp.clip(jp.where(jp.isnan(v), 0.0, v), -10.0, 10.0) for k, v in rewards.items()}
+    return rewards
 
   # Tracking rewards.
 
   def _reward_tracking_lin_vel(self, commands: jax.Array, local_vel: jax.Array) -> jax.Array:
         """Tracking of linear velocity commands (xy axes)."""
         lin_vel_error = jp.sum(jp.square(commands[:2] - local_vel[:2]))
-        return jp.exp(-lin_vel_error / self._config.reward_config.tracking_sigma)
+        return jp.exp(-lin_vel_error / (self._config.reward_config.tracking_sigma + 1e-8))
 
   def _cost_orientation(self, torso_zaxis: jax.Array) -> jax.Array:
         """Penalize non flat base orientation"""
@@ -426,15 +410,17 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
   def _reward_pose(self, qpos: jax.Array) -> jax.Array:
         """Stay close to the default pose."""
         weight = jp.array([1.0, 1.0] * 6)  # 12 joints for hexapod
-        return jp.exp(-jp.sum(jp.square(qpos - self._default_pose) * weight))
+        pose_error = jp.sum(jp.square(qpos - self._default_pose) * weight)
+        return jp.exp(-pose_error / (1.0 + 1e-8))
 
   def _cost_termination(self, done: jax.Array) -> jax.Array:
         """Penalize early termination."""
-        return done
+        return jp.where(jp.isnan(done), 1.0, done)
 
   def _cost_torques(self, torques: jax.Array) -> jax.Array:
         """Penalize torques."""
-        return jp.sqrt(jp.sum(jp.square(torques))) + jp.sum(jp.abs(torques))
+        torque_sq_sum = jp.sum(jp.square(torques))
+        return jp.sqrt(torque_sq_sum + 1e-8) + jp.sum(jp.abs(torques))
 
   def _cost_action_rate(self, act: jax.Array, last_act: jax.Array, last_last_act: jax.Array) -> jax.Array:
         """Penalize action rate changes."""
@@ -445,58 +431,15 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
     """Reward forward velocity only when at reasonable height."""
     forward_vel = self.get_local_linvel(data)[0]
     current_height = data.qpos[2]
-    
-    # Only reward forward motion when robot is on/near stairs
-    # Assumes stairs start at some Y position and extend upward
-    min_climbing_height = 0.15  # Above flat ground level
+    min_climbing_height = 0.3
     height_factor = jp.where(current_height > min_climbing_height, 1.0, 0.1)
-    
-    return jp.clip(forward_vel * height_factor * 2.0, 0.0, 5.0)
+    val = forward_vel * height_factor * 2.0
+    return jp.clip(jp.where(jp.isnan(val), 0.0, val), 0.0, 5.0)
 
-  def _reward_stair_alignment(self, data: mjx.Data) -> jax.Array:
-        """Reward staying aligned with stairs (not drifting in Y)."""
-        y_pos = data.qpos[1]
-        return jp.exp(-jp.square(y_pos) / 0.25)  # Penalize Y deviation
-
-  def _reward_body_stability(self, data: mjx.Data) -> jax.Array:
-        """Reward stable body orientation for climbing."""
-        pitch = jp.arcsin(2 * (data.qpos[6]*data.qpos[4] - data.qpos[3]*data.qpos[5]))
-        roll = jp.arcsin(2 * (data.qpos[6]*data.qpos[5] + data.qpos[3]*data.qpos[4]))
-        
-        # Slight forward pitch is good for climbing
-        ideal_pitch = 0.1  # ~6 degrees forward lean
-        pitch_error = jp.square(pitch - ideal_pitch)
-        roll_error = jp.square(roll)
-        
-        return jp.exp(-(pitch_error + roll_error) / 0.1)
-
-  def _reward_foot_placement(self, data: mjx.Data, contact: jax.Array) -> jax.Array:
-        """Reward good foot placement on steps."""
-        foot_positions = data.site_xpos[self._feet_site_id]
-        
-        # Reward feet being at different heights (climbing motion)
-        foot_heights = foot_positions[..., 2]
-        height_variance = jp.var(foot_heights)
-        
-        # Reward contact when climbing
-        contact_reward = jp.sum(contact) * 0.1
-        
-        return height_variance + contact_reward
-
-  def _cost_backward_motion(self, data: mjx.Data) -> jax.Array:
-        """Penalize moving backward."""
-        x_vel = self.get_local_linvel(data)[0]
-        return jp.clip(-x_vel * 5.0, 0.0, 10.0)
-
-  def _cost_excessive_pitch(self, data: mjx.Data) -> jax.Array:
-        """Penalize excessive forward/backward tilt."""
-        pitch = jp.arcsin(2 * (data.qpos[6]*data.qpos[4] - data.qpos[3]*data.qpos[5]))
-        return jp.square(jp.clip(jp.abs(pitch) - 0.3, 0.0, None))  # Allow some tilt
-  
   def _cost_y_deviation(self, data: mjx.Data) -> jax.Array:
         """Penalize deviation from stair centerline."""
         y_pos = data.qpos[1]
-        return jp.square(y_pos)  # Quadratic penalty for Y deviation
+        return jp.square(y_pos)
 
     # Perturbation and command sampling.
 
