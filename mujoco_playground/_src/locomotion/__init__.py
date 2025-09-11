@@ -32,9 +32,6 @@ from mujoco_playground._src.locomotion.go1 import getup as go1_getup
 from mujoco_playground._src.locomotion.go1 import handstand as go1_handstand
 from mujoco_playground._src.locomotion.go1 import joystick as go1_joystick
 from mujoco_playground._src.locomotion.go1 import randomize as go1_randomize
-from mujoco_playground._src.locomotion.go2 import joystick as go2_joystick
-from mujoco_playground._src.locomotion.go2 import joystick_decap as go2_joystick_decap
-from mujoco_playground._src.locomotion.go2 import randomize as go2_randomize
 from mujoco_playground._src.locomotion.spiderbot import joystick as spiderbot_joystick
 from mujoco_playground._src.locomotion.spiderbot import stairs_climbing as spiderbot_stairs
 from mujoco_playground._src.locomotion.h1 import inplace_gait_tracking as h1_inplace_gait_tracking
@@ -70,17 +67,11 @@ _envs = {
     "Go1JoystickRoughTerrain": functools.partial(
         go1_joystick.Joystick, task="rough_terrain"
     ),
-    "Go2JoystickFlatTerrain": functools.partial(
-        go2_joystick.Joystick, task="flat_terrain"
-    ),
-    "Go2JoystickDeCapFlatTerrain": functools.partial(
-        go2_joystick_decap.Joystick, task="flat_terrain"
-    ),
     "SpiderbotJoystickFlatTerrain": functools.partial(
         spiderbot_joystick.Joystick, task="flat_terrain"
     ),
     "SpiderbotJoystickRoughTerrain": functools.partial(
-        spiderbot_joystick.Joystick, task="flat_terrain"
+        spiderbot_joystick.Joystick, task="rough_terrain"
     ),
     "SpiderbotStairsClimbing": functools.partial(
         spiderbot_stairs.StairsClimbing, task="stairs"
@@ -118,12 +109,10 @@ _cfgs = {
     "G1JoystickFlatTerrain": g1_joystick.default_config,
     "G1JoystickRoughTerrain": g1_joystick.default_config,
     "Go1JoystickFlatTerrain": go1_joystick.default_config,
-    "Go2JoystickFlatTerrain": go2_joystick.default_config,
-    "Go2JoystickDeCapFlatTerrain": go2_joystick_decap.default_config,
+    "Go1JoystickRoughTerrain": go1_joystick.default_config,
     "SpiderbotJoystickFlatTerrain": spiderbot_joystick.default_config,
     "SpiderbotJoystickRoughTerrain": spiderbot_joystick.default_config,
     "SpiderbotStairsClimbing": spiderbot_stairs.default_config,
-    "Go1JoystickRoughTerrain": go1_joystick.default_config,
     "Go1Getup": go1_getup.default_config,
     "Go1Handstand": go1_handstand.default_config,
     "Go1Footstand": go1_handstand.default_config,
@@ -147,8 +136,6 @@ _randomizer = {
     "G1JoystickFlatTerrain": g1_randomize.domain_randomize,
     "G1JoystickRoughTerrain": g1_randomize.domain_randomize,
     "Go1JoystickFlatTerrain": go1_randomize.domain_randomize,
-    "Go2JoystickFlatTerrain": go2_randomize.domain_randomize,
-    "Go2JoystickDeCapFlatTerrain": go2_randomize.domain_randomize,
     "Go1JoystickRoughTerrain": go1_randomize.domain_randomize,
     "Go1Getup": go1_randomize.domain_randomize,
     "Go1Handstand": go1_randomize.domain_randomize,

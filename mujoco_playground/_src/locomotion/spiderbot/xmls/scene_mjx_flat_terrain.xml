@@ -25,6 +25,8 @@
       friction="0.6" condim="3" /> <!-- quat="-0.707107 -0.707107 0 0"/> -->
   </worldbody>
 
+  <include file="sensor_feet.xml"/>
+  
   <keyframe>
     <key name="home" qpos="0 0 0.1 0.707107 0 0.707107 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
     ctrl="0 0 0 0 0 0 0 0 0 0 0 0"/>

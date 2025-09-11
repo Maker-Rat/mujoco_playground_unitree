@@ -24,7 +24,7 @@ from mujoco import mjx
 from mujoco.mjx._src import math
 import numpy as np
 
-from mujoco_playground._src import collision
+# from mujoco_playground._src import collision
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.locomotion.spiderbot import base as spiderbot_base
 from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as consts
@@ -96,18 +96,23 @@ def default_config() -> config_dict.ConfigDict:
           # Probability of not zeroing out new command.
           b=[0.9, 0.25, 0.5],
       ),
+      impl="jax",
+      nconmax=4 * 8192,
+      njmax=40,
   )
 
 
 class Joystick(spiderbot_base.SpiderbotEnv):
   """Track a joystick command for spiderbot."""
-
   def __init__(
-      self,
-      task: str = "flat_terrain",
-      config: config_dict.ConfigDict = default_config(),
-      config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
-  ):
+        self,
+        task: str = "flat_terrain",
+        config: config_dict.ConfigDict = default_config(),
+        config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
+    ):
+    if task.startswith("rough"):
+      config.nconmax = 100 * 8192
+      config.njmax = 12 + 100 * 4
     super().__init__(
         xml_path=consts.task_to_xml(task).as_posix(),
         config=config,
@@ -117,12 +122,12 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
 
   def _actuator_joint_angles(self, qpos: jax.Array) -> jax.Array:
-    indices = [8, 9, 12, 13, 16, 17, 20, 21, 24, 25, 28, 29] 
-    return jp.array([qpos[i] for i in indices])
-  
+    indices = jax.numpy.array([8, 9, 12, 13, 16, 17, 20, 21, 24, 25, 28, 29])
+    return qpos[indices]
+
   def _actuator_joint_vels(self, qvel: jax.Array) -> jax.Array:
-    indices = [0, 1, 4, 5, 8, 9, 12, 13, 16, 17, 20, 21] 
-    return jp.array([qvel[i] for i in indices])
+    indices = jax.numpy.array([0, 1, 4, 5, 8, 9, 12, 13, 16, 17, 20, 21])
+    return qvel[indices]
 
   def _post_init(self) -> None:
     self._init_q = jp.array(self._mj_model.keyframe("home").qpos)
@@ -130,21 +135,25 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     # Note: First joint is freejoint.
     self._lowers, self._uppers = self.mj_model.jnt_range[1:].T
-    self._lowers = self._actuator_joint_vels(self._lowers)
-    self._uppers = self._actuator_joint_vels(self._uppers)
+    
+    # FIX: Convert to JAX array for indexing
+    actuated_indices = jp.array([0, 1, 4, 5, 8, 9, 12, 13, 16, 17, 20, 21])
+    self._lowers = self._lowers[actuated_indices]
+    self._uppers = self._uppers[actuated_indices]
+
     self._soft_lowers = self._lowers * self._config.soft_joint_pos_limit_factor
     self._soft_uppers = self._uppers * self._config.soft_joint_pos_limit_factor
 
     self._torso_body_id = self._mj_model.body(consts.ROOT_BODY).id
     self._torso_mass = self._mj_model.body_subtreemass[self._torso_body_id]
 
-    self._feet_site_id = np.array(
-        [self._mj_model.site(name).id for name in consts.FEET_SITES]
-    )
+    self._feet_site_id = jp.array([
+        self._mj_model.site(name).id for name in consts.FEET_SITES
+    ])
     self._floor_geom_id = self._mj_model.geom("floor").id
-    self._feet_geom_id = np.array(
-        [self._mj_model.geom(name).id for name in consts.FEET_GEOMS]
-    )
+    self._feet_geom_id = jp.array([
+        self._mj_model.geom(name).id for name in consts.FEET_GEOMS
+    ])
 
     foot_linvel_sensor_adr = []
     for site in consts.FEET_SITES:
@@ -165,22 +174,35 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     # x=+U(-0.5, 0.5), y=+U(-0.5, 0.5), yaw=U(-3.14, 3.14).
     rng, key = jax.random.split(rng)
-    dxy = jax.random.uniform(key, (2,), minval=-0.5, maxval=0.5)
+    dxy = jax.random.uniform(key, (2,), minval=-0.0, maxval=0.0)
     qpos = qpos.at[0:2].set(qpos[0:2] + dxy)
     rng, key = jax.random.split(rng)
-    yaw = jax.random.uniform(key, (1,), minval=-3.14, maxval=3.14)
+    yaw = jax.random.uniform(key, (1,), minval=0, maxval=0)
     quat = math.axis_angle_to_quat(jp.array([0, 0, 1]), yaw)
     new_quat = math.quat_mul(qpos[3:7], quat)
     qpos = qpos.at[3:7].set(new_quat)
 
-    # d(xyzrpy)=U(-0.5, 0.5)
+    # d(xyzrpy)=U(-0.1, 0.1) - reduced range for more stable initialization
     rng, key = jax.random.split(rng)
     qvel = qvel.at[0:6].set(
-        jax.random.uniform(key, (6,), minval=-0.5, maxval=0.5)
+        jax.random.uniform(key, (6,), minval=-0.1, maxval=0.1)
     )
 
-    data = mjx_env.init(self.mjx_model,qpos=qpos,qvel=qvel,ctrl=self._actuator_joint_angles(qpos))
+    # FIX: Use only the actuated joint positions for ctrl
+    actuated_joint_positions = self._actuator_joint_angles(qpos)
+    
+    data = mjx_env.make_data(
+        self.mj_model,
+        qpos=qpos,
+        qvel=qvel,
+        ctrl=actuated_joint_positions,  # Changed from qpos[7:] to match actuated joints
+        impl=self.mjx_model.impl.value,
+        nconmax=self._config.nconmax,
+        njmax=self._config.njmax,
+    )
+    data = mjx.forward(self.mjx_model, data)
 
+    # Rest of the method remains the same...
     rng, key1, key2, key3 = jax.random.split(rng, 4)
     time_until_next_pert = jax.random.uniform(
         key1,
@@ -249,10 +271,9 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         self.mjx_model, state.data, motor_targets, self.n_substeps
     )
 
-    contact = jp.array([
-        collision.geoms_colliding(data, geom_id, self._floor_geom_id)
-        for geom_id in self._feet_geom_id
-    ])
+    sensor_addresses = jp.array([self._mj_model.sensor_adr[int(sid)] for sid in self._feet_floor_found_sensor])
+    contact = data.sensordata[sensor_addresses] > 0
+    
     contact_filt = contact | state.info["last_contact"]
     first_contact = (state.info["feet_air_time"] > 0.0) * contact_filt
     state.info["feet_air_time"] += self.dt
