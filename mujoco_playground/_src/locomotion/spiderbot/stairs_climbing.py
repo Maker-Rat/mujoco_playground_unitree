@@ -54,14 +54,14 @@ def default_config() -> config_dict.ConfigDict:
 
         reward_config=config_dict.create(
             scales=config_dict.create(
-                # Stairs-specific rewards - MUCH higher for stair climbing
-                forward_progress=2.0,      # Strong reward for forward movement
+                # Stairs-specific rewards - focused on global movement
+                forward_progress=2.0,      # Strong reward for global forward movement
                 y_deviation=-0.5,          # Strong penalty for sideways drift
+                height_progress=2.0,       # Reward climbing higher
                 
-                # Basic locomotion - moderate weights
-                tracking_lin_vel=0.5,      # For command following
-                orientation=-0.35,          # Keep upright
-                pose=0.02,                  # Stay near default pose
+                # Basic locomotion - moderate weights  
+                orientation=-0.5,          # Keep upright
+                pose=0.02,                 # Stay near default pose
                 
                 # Standard penalties
                 termination=-1.0,
@@ -412,7 +412,7 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
     rewards = {
         "forward_progress": self._reward_forward_progress(data, info),
         "y_deviation": self._cost_y_deviation(data),
-        "tracking_lin_vel": self._reward_tracking_lin_vel(info["command"], self.get_local_linvel(data)),
+        "height_progress": self._reward_height_progress(data),
         "orientation": self._cost_orientation(self.get_upvector(data)),
         "pose": self._reward_pose(self._actuator_joint_angles(data.qpos)),
         "termination": self._cost_termination(done),
@@ -425,11 +425,6 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
     return rewards
 
   # Tracking rewards.
-
-  def _reward_tracking_lin_vel(self, commands: jax.Array, local_vel: jax.Array) -> jax.Array:
-        """Tracking of linear velocity commands (xy axes)."""
-        lin_vel_error = jp.sum(jp.square(commands[:2] - local_vel[:2]))
-        return jp.exp(-lin_vel_error / (self._config.reward_config.tracking_sigma + 1e-8))
 
   def _cost_orientation(self, torso_zaxis: jax.Array) -> jax.Array:
         """Penalize non flat base orientation"""
@@ -456,25 +451,27 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
         return jp.sum(jp.square(act - last_act))
 
   def _reward_forward_progress(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
-    """Reward forward velocity and height gain for stair climbing."""
-    forward_vel = self.get_local_linvel(data)[0]
+    """Reward forward movement in global X direction."""
+    # Use global velocity in X direction (world frame)
+    global_velocity = self.get_global_linvel(data)
+    forward_vel = global_velocity[0]  # Global X velocity
+    
+    # Reward forward movement (positive X velocity)
+    forward_reward = jp.clip(forward_vel * 2.0, 0.0, 5.0)
+    
+    return jp.clip(jp.where(jp.isnan(forward_reward), 0.0, forward_reward), 0.0, 5.0)
+
+  def _reward_height_progress(self, data: mjx.Data) -> jax.Array:
+    """Reward climbing higher (global Z position)."""
     current_height = data.qpos[2]
-    current_x = data.qpos[0]
     
-    # Reward forward movement more aggressively
-    forward_reward = jp.clip(forward_vel * 5.0, 0.0, 10.0)
+    # Reward height gain above base height (0.3m is roughly the robot's initial height)
+    height_reward = jp.clip((current_height - 0.3) * 5.0, 0.0, 3.0)
     
-    # Reward height gain (climbing stairs)
-    height_reward = jp.clip((current_height - 0.3) * 10.0, 0.0, 5.0)  # Above base height
-    
-    # Reward X progression (moving toward/up stairs)
-    x_progress_reward = jp.clip(current_x * 2.0, 0.0, 5.0)
-    
-    total_reward = forward_reward + height_reward + x_progress_reward
-    return jp.clip(jp.where(jp.isnan(total_reward), 0.0, total_reward), 0.0, 10.0)
+    return jp.clip(jp.where(jp.isnan(height_reward), 0.0, height_reward), 0.0, 3.0)
 
   def _cost_y_deviation(self, data: mjx.Data) -> jax.Array:
-        """Penalize deviation from stair centerline."""
+        """Penalize deviation from stair centerline in global Y."""
         y_pos = data.qpos[1]
         return jp.square(y_pos)
 
