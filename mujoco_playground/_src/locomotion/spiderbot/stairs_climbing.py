@@ -27,30 +27,68 @@ import numpy as np
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.locomotion.spiderbot import base as spiderbot_base
 from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as consts
-from mujoco_playground._src.locomotion.spiderbot import joystick as spiderbot_joystick
 
 
 # Updated reward configuration
 def default_config() -> config_dict.ConfigDict:
-    config = spiderbot_joystick.default_config()
-    
-    config.reward_config.scales.update({
-        # Basic progress rewards
-        "forward_progress": 1.5,
-        "y_deviation": -0.5,  # Penalty for drifting sideways (single form)
-        
-        # # Basic locomotion
-        # "tracking_lin_vel": 0.75,
-        # "orientation": -0.5,
-        # "pose": 0.025,
-        
-        # # Standard penalties
-        # "termination": -1.0,
-        # "torques": -0.0002,
-        # "action_rate": -0.02,
-    })
-    
-    return config
+    return config_dict.create(
+        ctrl_dt=0.04,
+        sim_dt=0.004,
+        episode_length=500,
+        Kp=35.0,
+        Kd=0.5,
+        action_repeat=1,
+        action_scale=0.5,
+        history_len=1,
+        soft_joint_pos_limit_factor=0.95,
+        noise_config=config_dict.create(
+            level=1.0,  # Set to 0.0 to disable noise.
+            scales=config_dict.create(
+                joint_pos=0.03,
+                joint_vel=1.5,
+                gyro=0.2,
+                gravity=0.05,
+                linvel=0.1,
+            ),
+        ),
+
+        reward_config=config_dict.create(
+            scales=config_dict.create(
+                # Stairs-specific rewards - MUCH higher for stair climbing
+                forward_progress=5.0,      # Strong reward for forward movement
+                y_deviation=-1.0,          # Strong penalty for sideways drift
+                
+                # Basic locomotion - moderate weights
+                tracking_lin_vel=0.5,      # For command following
+                orientation=-0.5,          # Keep upright
+                pose=0.05,                  # Stay near default pose
+                
+                # Standard penalties
+                termination=-1.0,
+                torques=-0.0002,
+                action_rate=-0.02,
+            ),
+            tracking_sigma=0.25,
+            max_foot_height=0.125,
+            action_smoothness=-0.0035,
+        ),
+
+        pert_config=config_dict.create(
+            enable=False,
+            velocity_kick=[0.0, 3.0],
+            kick_durations=[0.05, 0.2],
+            kick_wait_times=[1.0, 3.0],
+        ),
+        command_config=config_dict.create(
+            # Uniform distribution for command amplitude.
+            a=[1.0, 0.6, 0.8],  # Adjusted for spiderbot stability
+            # Probability of not zeroing out new command.
+            b=[0.9, 0.25, 0.5],
+        ),
+        impl="jax",
+        nconmax=4 * 8192,
+        njmax=40,
+    )
 
 
 class StairsClimbing(spiderbot_base.SpiderbotEnv): 
@@ -213,12 +251,11 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
  
     state = mjx_env.State(data, obs, reward, done, metrics, info)
     
-    # Set constant climbing command
+    # Set constant climbing command at start
     state.info["command"] = jp.array([0.2, 0.0, 0.0])
- 
-    return mjx_env.State(data, obs, reward, done, metrics, info)
     
-
+    return state
+  
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
     if self._config.pert_config.enable:
       state = self._maybe_apply_perturbation(state)
@@ -256,18 +293,9 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
 
     state.info["last_last_act"] = state.info["last_act"]
     state.info["last_act"] = action
-    state.info["steps_until_next_cmd"] -= 1
-    state.info["rng"], key1, key2 = jax.random.split(state.info["rng"], 3)
-    state.info["command"] = jp.where(
-        state.info["steps_until_next_cmd"] <= 0,
-        self.sample_command(key1, state.info["command"]),
-        state.info["command"],
-    )
-    state.info["steps_until_next_cmd"] = jp.where(
-        done | (state.info["steps_until_next_cmd"] <= 0),
-        jp.round(jax.random.exponential(key2) * 5.0 / self.dt).astype(jp.int32),
-        state.info["steps_until_next_cmd"],
-    )
+    
+    # Keep command constant for stairs climbing
+    state.info["command"] = jp.array([0.2, 0.0, 0.0])
     state.info["feet_air_time"] *= ~contact
     state.info["last_contact"] = contact
     state.info["swing_peak"] *= ~contact
@@ -428,13 +456,22 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
         return jp.sum(jp.square(act - last_act))
 
   def _reward_forward_progress(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
-    """Reward forward velocity only when at reasonable height."""
+    """Reward forward velocity and height gain for stair climbing."""
     forward_vel = self.get_local_linvel(data)[0]
     current_height = data.qpos[2]
-    min_climbing_height = 0.3
-    height_factor = jp.where(current_height > min_climbing_height, 1.0, 0.1)
-    val = forward_vel * height_factor * 2.0
-    return jp.clip(jp.where(jp.isnan(val), 0.0, val), 0.0, 5.0)
+    current_x = data.qpos[0]
+    
+    # Reward forward movement more aggressively
+    forward_reward = jp.clip(forward_vel * 5.0, 0.0, 10.0)
+    
+    # Reward height gain (climbing stairs)
+    height_reward = jp.clip((current_height - 0.3) * 10.0, 0.0, 5.0)  # Above base height
+    
+    # Reward X progression (moving toward/up stairs)
+    x_progress_reward = jp.clip(current_x * 2.0, 0.0, 5.0)
+    
+    total_reward = forward_reward + height_reward + x_progress_reward
+    return jp.clip(jp.where(jp.isnan(total_reward), 0.0, total_reward), 0.0, 10.0)
 
   def _cost_y_deviation(self, data: mjx.Data) -> jax.Array:
         """Penalize deviation from stair centerline."""
