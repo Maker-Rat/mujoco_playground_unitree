@@ -59,16 +59,16 @@ def default_config() -> config_dict.ConfigDict:
               tracking_lin_vel=2,  # Change from 1.5
               tracking_ang_vel=1.5,  # Change from 1.0
               # Base reward - your values need adjustment
-              lin_vel_z=-0.15,  # Change from -0.75
-              ang_vel_xy=-0.005,  # Change from -0.025
-              orientation=-0.5,  # Change from -2.5
+              lin_vel_z=-0.3,  # Change from -0.75
+              ang_vel_xy=-0.025,  # Change from -0.025
+              orientation=-1,  # Change from -2.5
               # Other
-              action_smoothness=-0.01,
+              action_smoothness=-0.02,
               dof_pos_limits=-0.5,  # Change from -0.5
-              pose=0.02,  # Change from 0.05
+              pose=0.1,  # Change from 0.05
               # Other
               termination=-1.0,
-              stand_still=-0.5,  # Change from -0.25
+              stand_still=-0.75,  # Change from -0.25
               # Regularization
               torques=-0.0,
               action_rate=-0.01,
