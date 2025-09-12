@@ -33,7 +33,7 @@ from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as c
 
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
-      ctrl_dt=0.04,
+      ctrl_dt=0.08,
       sim_dt=0.004,
       episode_length=1000,
       Kp=35.0,
@@ -56,8 +56,8 @@ def default_config() -> config_dict.ConfigDict:
       reward_config=config_dict.create(
           scales=config_dict.create(
               # Tracking - your current values are too high
-              tracking_lin_vel=2,  # Change from 1.5
-              tracking_ang_vel=1.5,  # Change from 1.0
+              tracking_lin_vel=2.5,  # Change from 1.5
+              tracking_ang_vel=2.0,  # Change from 1.0
               # Base reward - your values need adjustment
               lin_vel_z=-0.3,  # Change from -0.75
               ang_vel_xy=-0.025,  # Change from -0.025
@@ -68,7 +68,7 @@ def default_config() -> config_dict.ConfigDict:
               pose=0.1,  # Change from 0.05
               # Other
               termination=-1.0,
-              stand_still=-0.75,  # Change from -0.25
+              stand_still=-1.0,  # Change from -0.25
               # Regularization
               torques=-0.0,
               action_rate=-0.01,
@@ -174,10 +174,10 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     # x=+U(-0.5, 0.5), y=+U(-0.5, 0.5), yaw=U(-3.14, 3.14).
     rng, key = jax.random.split(rng)
-    dxy = jax.random.uniform(key, (2,), minval=-0.0, maxval=0.0)
+    dxy = jax.random.uniform(key, (2,), minval=-0.5, maxval=0.5)
     qpos = qpos.at[0:2].set(qpos[0:2] + dxy)
     rng, key = jax.random.split(rng)
-    yaw = jax.random.uniform(key, (1,), minval=0, maxval=0)
+    yaw = jax.random.uniform(key, (1,), minval=-3.14, maxval=3.14)
     quat = math.axis_angle_to_quat(jp.array([0, 0, 1]), yaw)
     new_quat = math.quat_mul(qpos[3:7], quat)
     qpos = qpos.at[3:7].set(new_quat)
@@ -185,7 +185,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     # d(xyzrpy)=U(-0.1, 0.1) - reduced range for more stable initialization
     rng, key = jax.random.split(rng)
     qvel = qvel.at[0:6].set(
-        jax.random.uniform(key, (6,), minval=-0.1, maxval=0.1)
+        jax.random.uniform(key, (6,), minval=-0.5, maxval=0.5)
     )
 
     # FIX: Use only the actuated joint positions for ctrl

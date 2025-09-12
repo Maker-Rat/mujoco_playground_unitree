@@ -32,7 +32,7 @@ from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as c
 # Updated reward configuration
 def default_config() -> config_dict.ConfigDict:
     return config_dict.create(
-        ctrl_dt=0.04,
+        ctrl_dt=0.08,
         sim_dt=0.004,
         episode_length=500,
         Kp=35.0,
@@ -55,9 +55,9 @@ def default_config() -> config_dict.ConfigDict:
         reward_config=config_dict.create(
             scales=config_dict.create(
                 # Stairs-specific rewards - focused on global movement
-                forward_progress=2.0,      # Strong reward for global forward movement
-                y_deviation=-0.5,          # Strong penalty for sideways drift
-                height_progress=2.0,       # Reward climbing higher
+                forward_progress=2.5,      # Strong reward for global forward movement
+                y_deviation=-1.0,          # Strong penalty for sideways drift
+                height_progress=2.5,       # Reward climbing higher
                 
                 # Basic locomotion - moderate weights  
                 orientation=-0.5,          # Keep upright
@@ -78,12 +78,6 @@ def default_config() -> config_dict.ConfigDict:
             velocity_kick=[0.0, 3.0],
             kick_durations=[0.05, 0.2],
             kick_wait_times=[1.0, 3.0],
-        ),
-        command_config=config_dict.create(
-            # Uniform distribution for command amplitude.
-            a=[1.0, 0.6, 0.8],  # Adjusted for spiderbot stability
-            # Probability of not zeroing out new command.
-            b=[0.9, 0.25, 0.5],
         ),
         impl="jax",
         nconmax=4 * 8192,
@@ -153,19 +147,16 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
       )
     self._foot_linvel_sensor_adr = jp.array(foot_linvel_sensor_adr)
 
-    self._cmd_a = jp.array(self._config.command_config.a)
-    self._cmd_b = jp.array(self._config.command_config.b)
-
   def reset(self, rng: jax.Array) -> mjx_env.State:
     qpos = self._init_q
     qvel = jp.zeros(self.mjx_model.nv)
 
     # x=+U(-0.5, 0.5), y=+U(-0.5, 0.5), yaw=U(-3.14, 3.14).
     rng, key = jax.random.split(rng)
-    dxy = jax.random.uniform(key, (2,), minval=-0.0, maxval=0.0)
+    dxy = jax.random.uniform(key, (2,), minval=0.0, maxval=0.0)
     qpos = qpos.at[0:2].set(qpos[0:2] + dxy)
     rng, key = jax.random.split(rng)
-    yaw = jax.random.uniform(key, (1,), minval=0, maxval=0)
+    yaw = jax.random.uniform(key, (1,), minval=0.0, maxval=0.0)
     quat = math.axis_angle_to_quat(jp.array([0, 0, 1]), yaw)
     new_quat = math.quat_mul(qpos[3:7], quat)
     qpos = qpos.at[3:7].set(new_quat)
@@ -214,19 +205,8 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
         maxval=self._config.pert_config.velocity_kick[1],
     )
 
-    rng, key1, key2 = jax.random.split(rng, 3)
-    time_until_next_cmd = jax.random.exponential(key1) * 5.0
-    steps_until_next_cmd = jp.round(time_until_next_cmd / self.dt).astype(
-        jp.int32
-    )
-    cmd = jax.random.uniform(
-        key2, shape=(3,), minval=-self._cmd_a, maxval=self._cmd_a
-    )
-
     info = {
         "rng": rng,
-        "command": jp.array([0.2, 0.0, 0.0]),
-        "steps_until_next_cmd": steps_until_next_cmd,
         "last_act": jp.zeros(self.mjx_model.nu),
         "last_last_act": jp.zeros(self.mjx_model.nu),
         "feet_air_time": jp.zeros(6),  # Changed to 6 for spiderbot
@@ -250,9 +230,6 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
     reward, done = jp.zeros(2)
  
     state = mjx_env.State(data, obs, reward, done, metrics, info)
-    
-    # Set constant climbing command at start
-    state.info["command"] = jp.array([0.2, 0.0, 0.0])
     
     return state
   
@@ -294,8 +271,6 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
     state.info["last_last_act"] = state.info["last_act"]
     state.info["last_act"] = action
     
-    # Keep command constant for stairs climbing
-    state.info["command"] = jp.array([0.2, 0.0, 0.0])
     state.info["feet_air_time"] *= ~contact
     state.info["last_contact"] = contact
     state.info["swing_peak"] *= ~contact
@@ -378,7 +353,6 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
         noisy_gravity,  # 3
         noisy_joint_angles - self._default_pose,  # 12 for spiderbot # noisy_joint_vel,  # 12 for spiderbot
         info["last_act"],  # 12 for spiderbot
-        info["command"],  # 3
     ])
 
     # accelerometer = self.get_accelerometer(data)
@@ -532,7 +506,3 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
         wait,
         state,
     )
-
-  def sample_command(self, rng: jax.Array, x_k: jax.Array) -> jax.Array:
-    """Override to always command forward motion for climbing."""
-    return jp.array([0.2, 0.0, 0.0])  # Constant forward command

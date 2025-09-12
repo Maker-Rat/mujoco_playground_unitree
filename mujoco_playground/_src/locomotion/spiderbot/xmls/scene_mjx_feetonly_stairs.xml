@@ -1,5 +1,5 @@
 <mujoco model="spiderbot scene">
-  <include file="spiderbot_v2_feetonly.xml"/>
+  <include file="spiderbot_v2_full.xml"/>
 
   <statistic center="0 0 0.1" extent="1.2" meansize="0.04"/>
 
@@ -61,7 +61,7 @@
   <include file="sensor_feet.xml"/>
 
   <keyframe>
-    <key name="home" qpos="0 0 0.15 0.707107 0 0.707107 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+    <key name="home" qpos="0 0 0.15 0.707107 -0.707107 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
     ctrl="0 0 0 0 0 0 0 0 0 0 0 0"/>
   </keyframe>
 </mujoco>
