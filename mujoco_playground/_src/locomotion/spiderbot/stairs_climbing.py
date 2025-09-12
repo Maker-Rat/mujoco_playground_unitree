@@ -55,13 +55,13 @@ def default_config() -> config_dict.ConfigDict:
         reward_config=config_dict.create(
             scales=config_dict.create(
                 # Stairs-specific rewards - MUCH higher for stair climbing
-                forward_progress=5.0,      # Strong reward for forward movement
-                y_deviation=-1.0,          # Strong penalty for sideways drift
+                forward_progress=2.0,      # Strong reward for forward movement
+                y_deviation=-0.5,          # Strong penalty for sideways drift
                 
                 # Basic locomotion - moderate weights
                 tracking_lin_vel=0.5,      # For command following
-                orientation=-0.5,          # Keep upright
-                pose=0.05,                  # Stay near default pose
+                orientation=-0.35,          # Keep upright
+                pose=0.02,                  # Stay near default pose
                 
                 # Standard penalties
                 termination=-1.0,
