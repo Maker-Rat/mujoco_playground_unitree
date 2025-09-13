@@ -70,9 +70,9 @@ def default_config() -> config_dict.ConfigDict:
               termination=-1.0,
               stand_still=-1.0,  # Change from -0.25
               # Regularization
-              torques=-0.0,
+              torques=-0.0002,
               action_rate=-0.01,
-              energy=-0.000,  # ADD THIS
+              energy=-0.001,  # ADD THIS
               # Feet - ADD ALL OF THESE
               feet_clearance=0.0,
               feet_height=0.0,
@@ -174,10 +174,10 @@ class Joystick(spiderbot_base.SpiderbotEnv):
 
     # x=+U(-0.5, 0.5), y=+U(-0.5, 0.5), yaw=U(-3.14, 3.14).
     rng, key = jax.random.split(rng)
-    dxy = jax.random.uniform(key, (2,), minval=-0.5, maxval=0.5)
+    dxy = jax.random.uniform(key, (2,), minval=-0.0, maxval=0.0)
     qpos = qpos.at[0:2].set(qpos[0:2] + dxy)
     rng, key = jax.random.split(rng)
-    yaw = jax.random.uniform(key, (1,), minval=-3.14, maxval=3.14)
+    yaw = jax.random.uniform(key, (1,), minval=-0.0, maxval=0.0)
     quat = math.axis_angle_to_quat(jp.array([0, 0, 1]), yaw)
     new_quat = math.quat_mul(qpos[3:7], quat)
     qpos = qpos.at[3:7].set(new_quat)
@@ -185,7 +185,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
     # d(xyzrpy)=U(-0.1, 0.1) - reduced range for more stable initialization
     rng, key = jax.random.split(rng)
     qvel = qvel.at[0:6].set(
-        jax.random.uniform(key, (6,), minval=-0.5, maxval=0.5)
+        jax.random.uniform(key, (6,), minval=-0.0, maxval=0.0)
     )
 
     # FIX: Use only the actuated joint positions for ctrl
@@ -294,7 +294,7 @@ class Joystick(spiderbot_base.SpiderbotEnv):
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
     
-    reward = jp.clip(sum(rewards.values()) * self.dt, 0.0, 10.0)
+    reward = jp.clip(sum(rewards.values()) * self.dt, 0.0, 10000.0)
     
     # And add an explicit print right before returning
     # debug.print("Final reward being returned: {}", reward)
