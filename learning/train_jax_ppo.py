@@ -84,6 +84,15 @@ _USE_WANDB = flags.DEFINE_boolean(
 _USE_TB = flags.DEFINE_boolean(
     "use_tb", False, "Use TensorBoard for logging (ignored in play-only mode)"
 )
+_CAPTURE_VIDEO = flags.DEFINE_boolean(
+    "capture_video", False, "Do a rollout and save video on every iteration during evaluation (uploads to W&B if use_wandb is enabled)"
+)
+_CAPTURE_VIDEO_LEN = flags.DEFINE_integer(
+    "capture_video_len", 200, "Length of rollout for video capture"
+)
+_VIDEO_INTERVAL = flags.DEFINE_integer(
+    "video_interval", 2000, "Save video every N training steps"
+)
 _DOMAIN_RANDOMIZATION = flags.DEFINE_boolean(
     "domain_randomization", False, "Use domain randomization"
 )
@@ -196,6 +205,74 @@ def rscope_fn(full_states, obs, rew, done):
       "Collected rscope rollouts with reward"
       f" {episode_rewards.mean():.3f} +- {episode_rewards.std():.3f}"
   )
+
+
+def rollout_and_capture_video(
+    env,
+    make_inference_fn,
+    params,
+    iteration,
+    vision=False,
+    max_steps=1000,
+    wandb_log=True,
+    save_dir=".",
+):
+  """
+  Runs a single rollout, saves an MP4, and optionally uploads to W&B.
+  """
+  # we create a new RNG for evaluation
+  rng = jax.random.PRNGKey(123 + iteration)
+  rng, reset_rng = jax.random.split(rng)
+  
+  # If using vision, we might have multiple envs for parallel rendering
+  if vision:
+    num_envs = env.num_envs if hasattr(env, "num_envs") else 1
+    reset_rng = jp.asarray(jax.random.split(reset_rng, num_envs))
+  
+  state = jax.jit(env.reset)(reset_rng)
+  # If vision: take the first env's state for storing frames
+  state0 = (
+      jax.tree_util.tree_map(lambda x: x[0], state) if vision else state
+  )
+  
+  inference_fn = make_inference_fn(params, deterministic=True)
+  jit_inference_fn = jax.jit(inference_fn)
+  
+  jit_reset = jax.jit(env.reset)
+  jit_step = jax.jit(env.step)
+  
+  rollout_frames = [state0]
+  for _ in range(max_steps):
+    act_rng, rng = jax.random.split(rng)
+    ctrl, _ = jit_inference_fn(state.obs, act_rng)
+    state = jit_step(state, ctrl)
+    state0 = (
+        jax.tree_util.tree_map(lambda x: x[0], state) if vision else state
+    )
+    rollout_frames.append(state0)
+    if state0.done:
+      break
+  
+  # Render frames
+  render_every = 2
+  fps = 1.0 / env.dt / render_every
+  traj = rollout_frames[::render_every]
+  
+  scene_option = mujoco.MjvOption()
+  scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
+  scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = False
+  scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
+  
+  frames = env.render(traj, height=480, width=640, scene_option=scene_option)
+  out_filename = os.path.join(save_dir, f"rollout_{iteration}.mp4")
+  media.write_video(out_filename, frames, fps=fps)
+  print(f"Saved rollout to {out_filename}.")
+  
+  # Upload to W&B if desired
+  if wandb_log and wandb.run is not None:
+    wandb.log({"rollout_video": wandb.Video(out_filename, fps=fps)}, step=iteration)
+  
+  return out_filename
 
 
 def main(argv):
@@ -404,7 +481,8 @@ def main(argv):
   if _VISION.value:
     num_envs = env_cfg.vision_config.render_batch_size
 
-  policy_params_fn = lambda *args: None
+  # Set up RScope if needed
+  rscope_handle = None
   if _RSCOPE_ENVS.value:
     # Interactive visualisation of policy checkpoints
     from rscope import brax as rscope_utils
@@ -430,7 +508,22 @@ def main(argv):
         rscope_fn,
     )
 
-    def policy_params_fn(current_step, make_policy, params):  # pylint: disable=unused-argument
+  # Define policy parameters function for saving checkpoints and rollout video
+  def policy_params_fn(current_step, make_policy, params):  # pylint: disable=unused-argument
+    if _CAPTURE_VIDEO.value:
+      # Only capture video at specified intervals to avoid too many videos
+      if current_step % _VIDEO_INTERVAL.value == 0:
+        rollout_and_capture_video(
+            env=env,
+            make_inference_fn=make_policy,
+            params=params,
+            iteration=current_step,
+            vision=_VISION.value,
+            max_steps=_CAPTURE_VIDEO_LEN.value,
+            wandb_log=_USE_WANDB.value,
+            save_dir=str(logdir),
+        )
+    if _RSCOPE_ENVS.value and rscope_handle is not None:
       rscope_handle.set_make_policy(make_policy)
       rscope_handle.dump_rollout(params)
 
