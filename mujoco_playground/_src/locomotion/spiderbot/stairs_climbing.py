@@ -55,17 +55,17 @@ def default_config() -> config_dict.ConfigDict:
         reward_config=config_dict.create(
             scales=config_dict.create(
                 # Stairs-specific rewards - focused on global movement
-                forward_progress=2.5,      # Strong reward for global forward movement
-                y_deviation=-1.0,          # Strong penalty for sideways drift
-                height_progress=2.5,       # Reward climbing higher
+                forward_progress=1.5,      # Strong reward for global forward movement
+                y_deviation=-0.5,          # Strong penalty for sideways drift
+                height_progress=1.5,       # Reward climbing higher
                 
                 # Basic locomotion - moderate weights  
-                orientation=-0.5,          # Keep upright
-                pose=0.02,                 # Stay near default pose
+                orientation=-0.1,          # Keep upright
+                pose=0.01,                 # Stay near default pose
                 
                 # Standard penalties
                 termination=-1.0,
-                torques=-0.0002,
+                torques=-0.0,
                 action_rate=-0.02,
             ),
             tracking_sigma=0.25,
