@@ -510,21 +510,26 @@ def main(argv):
         rscope_fn,
     )
 
+  last_video_step = [None]
+
   # Define policy parameters function for saving checkpoints and rollout video
   def policy_params_fn(current_step, make_policy, params):  # pylint: disable=unused-argument
     if _CAPTURE_VIDEO.value:
-      # Only capture video at specified intervals to avoid too many videos
-      if current_step % _VIDEO_INTERVAL.value == 0:
-        rollout_and_capture_video(
-            env=env,
-            make_inference_fn=make_policy,
-            params=params,
-            iteration=current_step,
-            vision=_VISION.value,
-            max_steps=_CAPTURE_VIDEO_LEN.value,
-            wandb_log=_USE_WANDB.value,
-            save_dir=str(logdir),
-        )
+      # Save video if it's the first call, or enough steps have passed
+      if (last_video_step[0] is None) or (current_step - last_video_step[0] >= _VIDEO_INTERVAL.value):
+          rollout_and_capture_video(
+              env=env,
+              make_inference_fn=make_policy,
+              params=params,
+              iteration=current_step,
+              vision=_VISION.value,
+              max_steps=_CAPTURE_VIDEO_LEN.value,
+              wandb_log=_USE_WANDB.value,
+              save_dir=str(logdir),
+          )
+          last_video_step[0] = current_step
+
+          
     if _RSCOPE_ENVS.value and rscope_handle is not None:
       rscope_handle.set_make_policy(make_policy)
       rscope_handle.dump_rollout(params)

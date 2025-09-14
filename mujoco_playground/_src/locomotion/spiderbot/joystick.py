@@ -57,13 +57,13 @@ def default_config() -> config_dict.ConfigDict:
           scales=config_dict.create(
               # Tracking - your current values are too high
               tracking_lin_vel=1.5,  # Change from 1.5
-              tracking_ang_vel=1.0,  # Change from 1.0
+              tracking_ang_vel=1.25,  # Change from 1.0
               # Base reward - your values need adjustment
               lin_vel_z=-0.4,  # Change from -0.75
               ang_vel_xy=-0.025,  # Change from -0.025
               orientation=-1.0,  # Change from -2.5
               # Other
-              action_smoothness=-0.02,
+              action_smoothness=-0.05,
               dof_pos_limits=-0.5,  # Change from -0.5
               pose=0.05,  # Change from 0.05
               # Other
@@ -92,7 +92,7 @@ def default_config() -> config_dict.ConfigDict:
       ),
       command_config=config_dict.create(
           # Uniform distribution for command amplitude.
-          a=[1.0, 0.6, 0.8],  # Adjusted for spiderbot stability
+          a=[0.3, 0.3, 1.25],  # Adjusted for spiderbot stability
           # Probability of not zeroing out new command.
           b=[0.9, 0.25, 0.5],
       ),
