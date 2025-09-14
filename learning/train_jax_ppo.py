@@ -30,6 +30,7 @@ from brax.training.agents.ppo import train as ppo
 from etils import epath
 import jax
 import jax.numpy as jp
+import numpy as np
 import mediapy as media
 from ml_collections import config_dict
 import mujoco
@@ -41,6 +42,7 @@ from mujoco_playground.config import locomotion_params
 from mujoco_playground.config import manipulation_params
 import tensorboardX
 import wandb
+from brax.io import model
 
 
 xla_flags = os.environ.get("XLA_FLAGS", "")
@@ -539,6 +541,37 @@ def main(argv):
   if len(times) > 1:
     print(f"Time to JIT compile: {times[1] - times[0]}")
     print(f"Time to train: {times[-1] - times[1]}")
+
+  print("💾 Saving final model as .npz...")
+  try:
+    # Create a directory for saving models if it doesn't exist
+    os.makedirs('trained_models', exist_ok=True)
+
+    # Save the full model state (includes both policy and value networks)
+    model_path = os.path.join('trained_models', 'spiderbot_flat_full.npz')
+    model.save_params(model_path, params)
+    print(f"Full model saved to {model_path}")
+
+    # Save just the policy network for easier deployment
+    policy_path = os.path.join('trained_models', 'spiderbot_flat_policy.npz')
+    policy_params = params[1]  # The policy network parameters are in the second element
+    model.save_params(policy_path, policy_params)
+    print(f"Policy network saved to {policy_path}")
+
+    # Optional: Save in numpy format for non-JAX deployment
+    import numpy as np
+
+    def convert_to_numpy(params):
+        return jax.tree_util.tree_map(lambda x: np.array(x), params)
+
+    numpy_params = convert_to_numpy(policy_params)
+    numpy_path = os.path.join('trained_models', 'spiderbot_flat_numpy.npz')
+    np.savez(numpy_path, **numpy_params)
+    print(f"NumPy format saved to {numpy_path}")
+    
+  except Exception as e:
+    print(f"⚠️ Failed to save .npz model: {e}")
+    print("💡 Orbax checkpoint is still available in the logs directory")
 
   print("Starting inference...")
 
