@@ -35,7 +35,7 @@ def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
       ctrl_dt=0.08,
       sim_dt=0.004,
-      episode_length=1000,
+      episode_length=250,
       Kp=35.0,
       Kd=0.5,
       action_repeat=1,
