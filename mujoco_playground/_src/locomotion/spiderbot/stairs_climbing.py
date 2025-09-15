@@ -60,7 +60,7 @@ def default_config() -> config_dict.ConfigDict:
                 height_progress=2,       # Reward climbing higher
                 
                 # Basic locomotion - moderate weights  
-                orientation=-0.25,          # Keep upright
+                orientation=-0.5,          # Keep upright
                 pose=0.025,                 # Stay near default pose
                 
                 # Standard penalties
@@ -425,15 +425,23 @@ class StairsClimbing(spiderbot_base.SpiderbotEnv):
         return jp.sum(jp.square(act - last_act))
 
   def _reward_forward_progress(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
-    """Reward forward movement in global X direction."""
-    # Use global velocity in X direction (world frame)
+    """Reward forward movement close to a target velocity (e.g., 0.2 m/s),
+    penalize more strongly for being too slow than too fast."""
     global_velocity = self.get_global_linvel(data)
     forward_vel = global_velocity[0]  # Global X velocity
-    
-    # Reward forward movement (positive X velocity)
-    forward_reward = jp.clip(forward_vel * 2.0, 0.0, 5.0)
-    
-    return jp.clip(jp.where(jp.isnan(forward_reward), 0.0, forward_reward), 0.0, 5.0)
+
+    target_vel = 0.2
+    # Asymmetric penalty: sharper for being too slow
+    below = forward_vel < target_vel
+    # Use a sharper decay for below-target, gentler for above-target
+    reward = jp.where(
+        below,
+        jp.exp(-((forward_vel - target_vel) ** 2) / (2 * 0.03 ** 2)),  # sharper for below
+        jp.exp(-((forward_vel - target_vel) ** 2) / (2 * 0.08 ** 2)),  # gentler for above
+    )
+    # Optionally, scale and clip
+    reward = 3.0 * reward  # scale as needed
+    return jp.clip(jp.where(jp.isnan(reward), 0.0, reward), 0.0, 3.0)
 
   def _reward_height_progress(self, data: mjx.Data) -> jax.Array:
     """Reward climbing higher (global Z position)."""
