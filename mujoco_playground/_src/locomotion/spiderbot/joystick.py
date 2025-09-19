@@ -33,7 +33,7 @@ from mujoco_playground._src.locomotion.spiderbot import spiderbot_constants as c
 
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
-      ctrl_dt=0.08,
+      ctrl_dt=0.02,
       sim_dt=0.004,
       episode_length=250,
       Kp=35.0,

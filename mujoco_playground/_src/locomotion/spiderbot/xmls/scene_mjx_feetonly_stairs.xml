@@ -30,38 +30,38 @@
     <geom name="floor" size="0 0 0.01" material="groundplane" type="plane" contype="1" conaffinity="0"/>
 
     <body name="stairs" pos="0.2 0 0" childclass="stairs">
-      <geom pos="0.3 0 0.05" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="0.6 0 0.10" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="0.9 0 0.15" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="1.2 0 0.20" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="1.5 0 0.25" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="1.8 0 0.30" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="2.1 0 0.35" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="2.4 0 0.40" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="2.7 0 0.45" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="3.0 0 0.50" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="3.3 0 0.55" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="3.6 0 0.60" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="3.9 0 0.65" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="4.2 0 0.70" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="4.5 0 0.75" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="4.8 0 0.80" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="5.1 0 0.85" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="5.4 0 0.90" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="5.7 0 0.95" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="6.0 0 1.00" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="6.3 0 1.05" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="6.6 0 1.10" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="6.9 0 1.15" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="7.2 0 1.20" type="box" size="0.15 1.2 0.025"/>
-      <geom pos="7.5 0 1.25" type="box" size="0.15 1.2 0.025"/>
+      <geom pos="0.3 0 0.05" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="0.6 0 0.10" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="0.9 0 0.15" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="1.2 0 0.20" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="1.5 0 0.25" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="1.8 0 0.30" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="2.1 0 0.35" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="2.4 0 0.40" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="2.7 0 0.45" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="3.0 0 0.50" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="3.3 0 0.55" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="3.6 0 0.60" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="3.9 0 0.65" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="4.2 0 0.70" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="4.5 0 0.75" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="4.8 0 0.80" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="5.1 0 0.85" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="5.4 0 0.90" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="5.7 0 0.95" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="6.0 0 1.00" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="6.3 0 1.05" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="6.6 0 1.10" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="6.9 0 1.15" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="7.2 0 1.20" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
+      <geom pos="7.5 0 1.25" type="box" size="0.15 1.2 0.025" rgba="0.52 0.44 0.33 0.75"/>
     </body>
   </worldbody>
 
   <include file="sensor_feet.xml"/>
 
   <keyframe>
-    <key name="home" qpos="0 0 0.15 0.707107 -0.707107 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+    <key name="home" qpos="1.5 0 0.35 0.707107 -0.707107 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
     ctrl="0 0 0 0 0 0 0 0 0 0 0 0"/>
   </keyframe>
 </mujoco>
