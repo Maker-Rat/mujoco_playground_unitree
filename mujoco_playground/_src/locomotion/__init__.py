@@ -137,7 +137,6 @@ _randomizer = {
     "G1JoystickFlatTerrain": g1_randomize.domain_randomize,
     "G1JoystickRoughTerrain": g1_randomize.domain_randomize,
     "Go1JoystickFlatTerrain": go1_randomize.domain_randomize,
-    "SpiderbotJoystickFlatTerrain": spiderbot_randomize.domain_randomize,
     "Go1JoystickRoughTerrain": go1_randomize.domain_randomize,
     "Go1Getup": go1_randomize.domain_randomize,
     "Go1Handstand": go1_randomize.domain_randomize,
