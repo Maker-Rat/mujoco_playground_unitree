@@ -20,12 +20,12 @@ from mujoco_playground._src import mjx_env
 
 ROOT_PATH = mjx_env.ROOT_PATH / "locomotion" / "q1"
 FEET_ONLY_FLAT_TERRAIN_XML = (
-    ROOT_PATH / "xmls" / "scene_mjx_full_flat_terrain.xml"
+    ROOT_PATH / "xmls" / "scene_mjx_feetonly_flat_terrain.xml"
 )
 FEET_ONLY_ROUGH_TERRAIN_XML = (
-    ROOT_PATH / "xmls" / "scene_mjx_full_flat_terrain.xml"
+    ROOT_PATH / "xmls" / "scene_mjx_feetonly_flat_terrain.xml"
 )
-FULL_FLAT_TERRAIN_XML = ROOT_PATH / "xmls" / "q1_mjx_full_flat_terrain.xml"
+FULL_FLAT_TERRAIN_XML = ROOT_PATH / "xmls" / "scene_mjx_full_flat_terrain.xml"
 FULL_COLLISIONS_FLAT_TERRAIN_XML = (
     ROOT_PATH / "xmls" / "scene_mjx_full_flat_terrain.xml"
 )

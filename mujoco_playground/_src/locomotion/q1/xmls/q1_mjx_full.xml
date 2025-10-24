@@ -42,7 +42,7 @@
           The floor is contype=1, conaffinity=1 so the feet can collide with the floor.
           group="0" makes them visible, rgba makes them bright orange
           -->
-          <geom type="sphere" size="0.025" pos="0 -0.065 0.35" solimp="0.9 0.95 0.001" solref="0.004 1" contype="1" conaffinity="1" condim="3" friction="1.0 0.005 0.0001" rgba="1 0.5 0 1" group="0"/>
+          <geom type="sphere" size="0.025" pos="0 -0.065 0.35" solimp="0.9 0.95 0.001" solref="0.004 1" contype="1" conaffinity="1" condim="3" friction="2.0 0.1 0.01" rgba="1 0.5 0 1" group="0"/>
         </default>
       </default>
     </default>
