@@ -1,0 +1,175 @@
+<mujoco model="kutta">
+  <compiler angle="radian" meshdir="assets/" autolimits="true"/>
+
+  <option iterations="1" ls_iterations="5" timestep="0.004" integrator="Euler">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <default>
+    <default class="kutta">
+      <!-- This globally disables collisions for all parts except feet -->
+      <geom condim="3" contype="0" conaffinity="0"/>
+      <joint axis="0 0 1" armature="0.005" damping="0.5"/>
+      <position forcerange="-23.7 23.7" inheritrange="1" kp="35"/>
+      <default class="thigh">
+        <joint range="-0.9 0.67" frictionloss="0.3"/>
+      </default>
+      <default class="calf">
+        <joint range="-0.5 0.5" frictionloss="1.0"/>
+        <position forcerange="-35.55 35.55"/>
+      </default>
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" material="dark"/>
+      </default>
+      <default class="collision">
+        <!-- These are disabled collision geometries (contype=0, conaffinity=0) -->
+        <geom group="3" type="capsule" contype="0" conaffinity="0"/>
+        <default class="trunk">
+          <geom size="0.15 0.08 0.05" type="box" contype="0" conaffinity="0"/>
+        </default>
+        <default class="thigh_col_right">
+          <geom size="0.02" fromto="0 0 0.055 0 0.245 0.055" type="capsule" contype="1" conaffinity="1" />
+        </default>
+        <default class="thigh_col_left">
+          <geom size="0.02" fromto="0 0 -0.055 0 0.245 -0.055" type="capsule" contype="1" conaffinity="1" />
+        </default>
+        <default class="calf_col">
+          <geom size="0.015" fromto="0 0 0 0 -0.065 0.33" type="capsule" contype="0" conaffinity="0" />
+        </default>
+        <default class="foot">
+          <!--
+          FOOT CONTACT SPHERES - These are the ONLY collision geometries enabled!
+          The floor is contype=1, conaffinity=1 so the feet can collide with the floor.
+          group="0" makes them visible, rgba makes them bright orange
+          -->
+          <geom type="sphere" size="0.025" pos="0 -0.065 0.35" solimp="0.9 0.95 0.001" solref="0.004 1" contype="1" conaffinity="1" condim="3" friction="1.0 0.005 0.0001" rgba="1 0.5 0 1" group="0"/>
+        </default>
+      </default>
+    </default>
+  </default>
+
+  <asset>
+    <material name="dark" rgba="0.2 0.2 0.2 1"/>
+    <material name="light" rgba="0.776471 0.756863 0.737255 1"/>
+    <material name="blue" rgba="0.792157 0.819608 0.933333 1"/>
+    <mesh name="base_link" content_type="model/stl" file="base_link.STL"/>
+    <mesh name="left_thigh" content_type="model/stl" file="FL_thigh.STL"/>
+    <mesh name="left_calf" content_type="model/stl" file="FL_calf.STL"/>
+    <mesh name="right_thigh" content_type="model/stl" file="FR_thigh.STL"/>
+    <mesh name="right_calf" content_type="model/stl" file="FR_calf.STL"/>
+  </asset>
+
+  <worldbody>
+    <body name="trunk" pos="0 0 0.6" quat="0.7071 -0.7071 0 0" childclass="kutta">
+      <camera name="track" pos="0.846 -1.3 0.316" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940" mode="trackcom"/>
+      <camera name="top" pos="-1 0 1" xyaxes="0 -1 0 0.7 0 0.7" mode="trackcom"/>
+      <camera name="side" pos="0 -1 .3" xyaxes="1 0 0 0 1 2" mode="trackcom"/>
+      <camera name="back" pos="-1 0 .3" xyaxes="0 -1 0 1 0 2" mode="trackcom"/>
+      <site name="head" pos="0.3 0 0" rgba="1 0 0 1" size="0.02" group="5"/>
+      <inertial pos="0 0 0" mass="20.0" diaginertia="0.1 0.1 0.05"/>
+      <freejoint/>
+      
+      <!-- Visual mesh for trunk -->
+      <geom class="visual" mesh="base_link" material="blue"/>
+      <!-- Collision geometry for trunk -->
+      <geom class="trunk"/>
+      
+      <site name="imu" pos="0 0 0" group="5"/>
+      
+      <!-- Front Left Leg -->
+      <body name="FL_thigh" pos="0.211553 0.09 -0.179" quat="0.634822 -0.31145 -0.634822 0.31145">
+        <inertial pos="-0.000817907 0.0310806 -0.0509014" quat="0.393902 0.389492 -0.600379 0.576786" mass="1.55" diaginertia="0.00261662 0.00260068 0.00123196"/>
+        <joint class="thigh" name="FL_thigh_joint"/>
+        <geom class="visual" mesh="left_thigh" material="light"/>
+        <geom class="thigh_col_left"/>
+        <body name="FL_calf" pos="0 0.245452 -0.0544472" quat="0.707107 0 0.707107 0">
+          <inertial pos="-1.51413e-09 -0.0322977 0.16607" quat="0.703848 0.0678076 -0.0678076 0.703848" mass="0.25" diaginertia="0.000849475 0.000848789 1.70367e-05"/>
+          <joint class="calf" name="FL_calf_joint" axis="-1 0 0"/>
+          <geom class="visual" mesh="left_calf" material="blue"/>
+          <geom class="calf_col"/>
+          <geom name="FL" class="foot"/>
+          <site name="FL" pos="0 -0.33 0" type="sphere" size="0.03" group="5"/>
+        </body>
+      </body>
+      
+      <!-- Front Right Leg -->
+      <body name="FR_thigh" pos="-0.211553 0.09 -0.179" quat="0.635676 -0.309703 -0.635676 0.309703">
+        <inertial pos="0.000777694 0.0310806 0.050662" quat="0.378108 0.389847 -0.582841 0.604442" mass="1.55" diaginertia="0.0026164 0.00260097 0.00123189"/>
+        <joint class="thigh" name="FR_thigh_joint"/>
+        <geom class="visual" mesh="right_thigh" material="light"/>
+        <geom class="thigh_col_right"/>
+        <body name="FR_calf" pos="0 0.245452 0.0544472" quat="0.707107 0 0.707107 0">
+          <inertial pos="-1.51412e-09 -0.0322977 0.16607" quat="0.703848 0.0678076 -0.0678076 0.703848" mass="0.25" diaginertia="0.000849475 0.000848789 1.70367e-05"/>
+          <joint class="calf" name="FR_calf_joint" axis="-1 0 0"/>
+          <geom class="visual" mesh="right_calf" material="blue"/>
+          <geom class="calf_col"/>
+          <geom name="FR" class="foot"/>
+          <site name="FR" pos="0 -0.33 0" type="sphere" size="0.025" group="5"/>
+        </body>
+      </body>
+      
+      <!-- Rear Left Leg -->
+      <body name="RL_thigh" pos="0.211553 0.09 0.179" quat="0.638021 -0.304842 -0.638021 0.304842">
+        <inertial pos="-0.000817907 0.0310806 -0.0509014" quat="0.393902 0.389492 -0.600379 0.576786" mass="1.55" diaginertia="0.00261662 0.00260068 0.00123196"/>
+        <joint class="thigh" name="RL_thigh_joint"/>
+        <geom class="visual" mesh="left_thigh" material="light"/>
+        <geom class="thigh_col_left"/>
+        <body name="RL_calf" pos="0 0.245452 -0.0544472" quat="0.707107 0 0.707107 0">
+          <inertial pos="-1.51413e-09 -0.0322977 0.16607" quat="0.703848 0.0678076 -0.0678076 0.703848" mass="0.25" diaginertia="0.000849475 0.000848789 1.70367e-05"/>
+          <joint class="calf" name="RL_calf_joint" axis="-1 0 0"/>
+          <geom class="visual" mesh="left_calf" material="blue"/>
+          <geom class="calf_col"/>
+          <geom name="RL" class="foot"/>
+          <site name="RL" pos="0 -0.33 0" type="sphere" size="0.025" group="5"/>
+        </body>
+      </body>
+      
+      <!-- Rear Right Leg -->
+      <body name="RR_thigh" pos="-0.211553 0.09 0.179" quat="0.637893 -0.305111 -0.637893 0.305111">
+        <inertial pos="0.000777694 0.0310806 0.050662" quat="0.378108 0.389847 -0.582841 0.604442" mass="1.55" diaginertia="0.0026164 0.00260097 0.00123189"/>
+        <joint class="thigh" name="RR_thigh_joint"/>
+        <geom class="visual" mesh="right_thigh" material="light"/>
+        <geom class="thigh_col_right"/>
+        <body name="RR_calf" pos="-0 0.245452 0.0544472" quat="0.707107 0 0.707107 0">
+          <inertial pos="1.51412e-09 -0.0322977 -0.16607" quat="0.703848 -0.0678076 0.0678076 0.703848" mass="0.25" diaginertia="0.000849475 0.000848789 1.70367e-05"/>
+          <joint class="calf" name="RR_calf_joint" axis="-1 0 0"/>
+          <geom class="visual" mesh="right_calf" material="blue"/>
+          <geom class="calf_col"/>
+          <geom name="RR" class="foot"/>
+          <site name="RR" pos="0 -0.33 0" type="sphere" size="0.025" group="5"/>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position class="thigh" name="FL_thigh" joint="FL_thigh_joint" gear="1" kp="15" kv="1"/>
+    <position class="calf" name="FL_calf" joint="FL_calf_joint" gear="1" kp="30" kv="1"/>
+    <position class="thigh" name="FR_thigh" joint="FR_thigh_joint" gear="1" kp="15" kv="1"/>
+    <position class="calf" name="FR_calf" joint="FR_calf_joint" gear="1" kp="30" kv="1"/>
+    <position class="thigh" name="RL_thigh" joint="RL_thigh_joint" gear="1" kp="15" kv="1"/>
+    <position class="calf" name="RL_calf" joint="RL_calf_joint" gear="1" kp="30" kv="1"/>
+    <position class="thigh" name="RR_thigh" joint="RR_thigh_joint" gear="1" kp="15" kv="1"/>
+    <position class="calf" name="RR_calf" joint="RR_calf_joint" gear="1" kp="30" kv="1"/>
+  </actuator>
+
+  <sensor>
+    <gyro site="imu" name="gyro"/>
+    <velocimeter site="imu" name="local_linvel"/>
+    <accelerometer site="imu" name="accelerometer"/>
+    <framepos objtype="site" objname="imu" name="position"/>
+    <framezaxis objtype="site" objname="imu" name="upvector"/>
+    <framexaxis objtype="site" objname="imu" name="forwardvector"/>
+    <framelinvel objtype="site" objname="imu" name="global_linvel"/>
+    <frameangvel objtype="site" objname="imu" name="global_angvel"/>
+    <framequat objtype="site" objname="imu" name="orientation"/>
+    <framelinvel objtype="site" objname="FL" name="FL_global_linvel"/>
+    <framelinvel objtype="site" objname="FR" name="FR_global_linvel"/>
+    <framelinvel objtype="site" objname="RL" name="RL_global_linvel"/>
+    <framelinvel objtype="site" objname="RR" name="RR_global_linvel"/>
+    <framepos objtype="site" objname="FL" name="FL_pos" reftype="site" refname="imu"/>
+    <framepos objtype="site" objname="FR" name="FR_pos" reftype="site" refname="imu"/>
+    <framepos objtype="site" objname="RL" name="RL_pos" reftype="site" refname="imu"/>
+    <framepos objtype="site" objname="RR" name="RR_pos" reftype="site" refname="imu"/>
+  </sensor>
+</mujoco>
